@@ -1,0 +1,137 @@
+#
+# $Id: Jamfile.jam 205 2012-11-21 21:55:43Z chambm $
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); 
+# you may not use this file except in compliance with the License. 
+# You may obtain a copy of the License at 
+# 
+# http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software 
+# distributed under the License is distributed on an "AS IS" BASIS, 
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. 
+# See the License for the specific language governing permissions and 
+# limitations under the License.
+#
+# The Original Code is the Bumbershoot build system.
+#
+# The Initial Developer of the Original Code is Matt Chambers.
+#
+# Copyright 2009 Vanderbilt University
+#
+# Contributor(s): Surendra Dasari
+#
+
+#import mpi ;
+import modules os ;
+using tar ;
+import tar ;
+
+
+constant BOOST_VERSION : 1 43 0 ;
+
+local default_libraries_path = "./libraries" ;
+local libraries_path = [ MATCH --libraries-path=(.*) : [ modules.peek : ARGV ] ] ;
+libraries_path ?= $(default_libraries_path) ; # set default path in absence of command-line path
+
+local default_boost_src = "$(libraries_path)/boost_$(BOOST_VERSION:J=_)" ;
+local boost_src = [ MATCH --boost-src=(.*) : [ modules.peek : ARGV ] ] ;
+boost_src ?= $(default_boost_src) ; # set default path in absence of command-line path
+
+local default_zlib_src = "$(libraries_path)/zlib-1.2.3" ;
+local zlib_src = [ MATCH --zlib-src=(.*) : [ modules.peek : ARGV ] ] ;
+zlib_src ?= $(default_zlib_src) ; # set default path in absence of command-line path
+
+path-constant THIS_PATH : . ;
+
+import svnrev path ;
+local revision-info = [ svnrev.generate-version-header $(THIS_PATH)/svnrev.hpp : [ path.glob $(THIS_PATH) : *.?pp *.h Jamfile.jam ] : yes ] ;
+
+# revision-info is a sequence: <max revision> <max year> <max month> <max day> <number of modified files in working copy>
+
+local year = $(revision-info[2]) ;
+local month = $(revision-info[3]) ;
+local day = $(revision-info[4]) ;
+
+constant MAJOR : 1 ;
+constant MINOR : 7 ;
+constant SVNREV : $(revision-info[1]) ;
+constant SVNREVDATE : "(last modified $(year)-$(month)-$(day))" ;
+
+
+version-tag = $(MAJOR) $(MINOR) $(SVNREV) ;
+
+if $(revision-info[5]) > 0
+{
+    version-tag += "modified" ;
+    echo NOTICE: WORKING COPY HAS $(revision-info[5]) MODIFIED FILES. ;
+}
+
+echo FreiCore $(version-tag:J=.) $(SVNREVDATE:J=) ;
+
+path-constant BOOST_SOURCE : $(boost_src) ;
+path-constant ZLIB_SOURCE : $(zlib_src) ;
+
+local .has-boost = [ MATCH "(.+)" : [ modules.peek : BOOST_VERSION ] ] ;
+if ! $(.has-boost)
+{
+    modules.poke : BOOST_VERSION : $(BOOST_VERSION) ;
+    using ext-boost : $(BOOST_VERSION:J=.) : $(BOOST_SOURCE) : <zlib-src-location>$(ZLIB_SOURCE) ;
+}
+
+
+local pwiz_src_tarball = [ SORT [ glob pwiz-src*.tar.bz2 ] ] ;
+pwiz_src_tarball = $(pwiz_src_tarball[-1]) ; # take the last (latest) tarball
+
+# extract pwiz tarball
+tar.extract
+      # tar filepath
+        $(pwiz_src_tarball)
+    : # include patterns
+        quickbuild.* clean.*
+        Jamroot.jam
+        LICENSE NOTICE
+        pwiz
+        pwiz_aux/msrc
+        pwiz_aux/Jamfile.jam
+        pwiz_tools/common
+
+    : # requirements
+        <location>pwiz_src
+    : # usage-requirements
+    : check-last-file-only
+    ;
+
+
+lib freicore
+ : # sources
+     [ glob *.cpp : *Test*.cpp *test*.cpp UniMod*.cpp mapPeptidesToFasta.cpp ]
+ : # requirements
+     <library>$(PWIZ_SOURCE)/pwiz_tools/common//pwiz_tools_common
+     <library>$(PWIZ_SOURCE)/pwiz/data/proteome//pwiz_data_proteome
+     <library>$(PWIZ_SOURCE)/pwiz/data/identdata//pwiz_data_identdata
+     <library>$(PWIZ_SOURCE)/pwiz/analysis/proteome_processing//pwiz_analysis_proteome_processing
+     <warnings>all
+ : # default-build
+     <link>static
+     <variant>release
+     <threading>multi
+      
+ : # usage-requirements
+     <library>$(PWIZ_SOURCE)/pwiz_tools/common//pwiz_tools_common
+     <library>$(PWIZ_SOURCE)/pwiz/data/proteome//pwiz_data_proteome
+     <library>$(PWIZ_SOURCE)/pwiz/data/identdata//pwiz_data_identdata
+     <library>$(PWIZ_SOURCE)/pwiz/analysis/proteome_processing//pwiz_analysis_proteome_processing
+     <include>.
+ ;
+
+
+import testing ;
+unit-test SharedTests : SharedTests.cpp freicore ;
+unit-test SearchResultSetTest : SearchResultSetTest.cpp freicore ;
+unit-test AhoCorasickTrieTest : AhoCorasickTrieTest.cpp freicore ;
+unit-test BaseRunTimeConfigTest : BaseRunTimeConfigTest.cpp freicore ;
+unit-test percentile_test : percentile_test.cpp freicore ;
+
+explicit mapPeptidesToFasta ;
+exe mapPeptidesToFasta : mapPeptidesToFasta.cpp freicore ;
