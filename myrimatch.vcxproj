@@ -37,7 +37,7 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>$(ProjectDir)\freicore\libraries\boost_aux\boost;$(ProjectDir)\freicore\libraries\boost_1_43_0;$(ProjectDir)\freicore\pwiz_src;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)\freicore\ext\src\expat-2.0.1\lib;$(ProjectDir)\freicore;$(ProjectDir)\freicore\libraries\boost_aux;$(ProjectDir)\freicore\libraries\boost_1_43_0;$(ProjectDir)\freicore\pwiz_src;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -63,10 +63,10 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <None Include="build.sh" />
-    <None Include="ClassDiagram1.cd" />
-    <None Include="ClassDiagram2.cd" />
     <None Include="clean.bat" />
     <None Include="clean.sh" />
+    <None Include="freicore\Jamfile.jam" />
+    <None Include="freicore\pwiz-src-without-lt-3_0_4151.tar.bz2" />
     <None Include="Jamroot.jam" />
     <None Include="LICENSE" />
     <None Include="quickbuild.bat" />
@@ -75,12 +75,68 @@
     <None Include="SUBSET" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="freicore\AhoCorasickTrieTest.cpp" />
+    <ClCompile Include="freicore\BaseRunTimeConfig.cpp" />
+    <ClCompile Include="freicore\BaseRunTimeConfigTest.cpp" />
+    <ClCompile Include="freicore\BaseSpectrum.cpp" />
+    <ClCompile Include="freicore\BlosumMatrix.cpp" />
+    <ClCompile Include="freicore\constants.cpp" />
+    <ClCompile Include="freicore\freicore.cpp" />
+    <ClCompile Include="freicore\mapPeptidesToFasta.cpp" />
+    <ClCompile Include="freicore\percentile_test.cpp" />
+    <ClCompile Include="freicore\proteinStore.cpp" />
+    <ClCompile Include="freicore\SearchResultSetTest.cpp" />
+    <ClCompile Include="freicore\SearchSpectrum.cpp" />
+    <ClCompile Include="freicore\SharedTests.cpp" />
+    <ClCompile Include="freicore\shared_defs.cpp" />
+    <ClCompile Include="freicore\shared_funcs.cpp" />
+    <ClCompile Include="freicore\stdafx.cpp" />
+    <ClCompile Include="freicore\tagsFile.cpp" />
+    <ClCompile Include="freicore\UniModXMLParser.cpp" />
+    <ClCompile Include="freicore\WuManber.cpp" />
     <ClCompile Include="myrimatch.cpp" />
     <ClCompile Include="myrimatchMPI.cpp" />
     <ClCompile Include="myrimatchSpectrum.cpp" />
     <ClCompile Include="myrimatchVersion.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="freicore\AhoCorasickTrie.hpp" />
+    <ClInclude Include="freicore\BaseRunTimeConfig.h" />
+    <ClInclude Include="freicore\BaseSpectrum.h" />
+    <ClInclude Include="freicore\BitwiseSubsetGenerator.h" />
+    <ClInclude Include="freicore\BlosumMatrix.h" />
+    <ClInclude Include="freicore\CharIndexedVector.h" />
+    <ClInclude Include="freicore\constants.h" />
+    <ClInclude Include="freicore\expat_xml.h" />
+    <ClInclude Include="freicore\freicore.h" />
+    <ClInclude Include="freicore\Histogram.h" />
+    <ClInclude Include="freicore\lnFactorialTable.h" />
+    <ClInclude Include="freicore\MixedRadixEnumerator.h" />
+    <ClInclude Include="freicore\PeakSpectrum.h" />
+    <ClInclude Include="freicore\pepXmlTypes.h" />
+    <ClInclude Include="freicore\percentile.hpp" />
+    <ClInclude Include="freicore\portable_archive_exception.hpp" />
+    <ClInclude Include="freicore\portable_iarchive.hpp" />
+    <ClInclude Include="freicore\portable_oarchive.hpp" />
+    <ClInclude Include="freicore\Profiler.h" />
+    <ClInclude Include="freicore\proteinStore.h" />
+    <ClInclude Include="freicore\PTMVariantList.h" />
+    <ClInclude Include="freicore\ResidueMap.h" />
+    <ClInclude Include="freicore\searchResult.h" />
+    <ClInclude Include="freicore\SearchResultSet.h" />
+    <ClInclude Include="freicore\SearchSpectrum.h" />
+    <ClInclude Include="freicore\shared_defs.h" />
+    <ClInclude Include="freicore\shared_funcs.h" />
+    <ClInclude Include="freicore\shared_types.h" />
+    <ClInclude Include="freicore\simplethreads.h" />
+    <ClInclude Include="freicore\SimpleXMLWriter.h" />
+    <ClInclude Include="freicore\stdafx.h" />
+    <ClInclude Include="freicore\SubsetEnumerator.h" />
+    <ClInclude Include="freicore\svnrev.hpp" />
+    <ClInclude Include="freicore\tagsFile.h" />
+    <ClInclude Include="freicore\topset.h" />
+    <ClInclude Include="freicore\UniModXMLParser.h" />
+    <ClInclude Include="freicore\WuManber.h" />
     <ClInclude Include="myrimatch.h" />
     <ClInclude Include="myrimatchConfig.h" />
     <ClInclude Include="myrimatchSpectrum.h" />
