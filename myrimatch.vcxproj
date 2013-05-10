@@ -98,6 +98,7 @@
     <ClCompile Include="myrimatchMPI.cpp" />
     <ClCompile Include="myrimatchSpectrum.cpp" />
     <ClCompile Include="myrimatchVersion.cpp" />
+    <ClCompile Include="tracer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="freicore\AhoCorasickTrie.hpp" />
@@ -141,6 +142,7 @@
     <ClInclude Include="myrimatchConfig.h" />
     <ClInclude Include="myrimatchSpectrum.h" />
     <ClInclude Include="myrimatchVersion.hpp" />
+    <ClInclude Include="tracer.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

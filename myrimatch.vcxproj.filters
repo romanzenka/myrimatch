@@ -101,6 +101,9 @@
     <ClCompile Include="freicore\WuManber.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="tracer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="myrimatch.h">
@@ -224,6 +227,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="freicore\WuManber.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="tracer.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
