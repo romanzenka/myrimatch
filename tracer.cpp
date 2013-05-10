@@ -105,7 +105,7 @@ void tracer_dump(const void *x, const char * type, const string &representation)
 void tracer_reason(const void *x, const char * reason) {
 	tracer_hdr("reason", x);
 	cout << reason;
-
+	tracer_ftr();
 }
 
 void tracer_op_start(const char *name, const char *file, int linenum) {
