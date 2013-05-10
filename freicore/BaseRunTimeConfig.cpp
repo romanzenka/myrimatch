@@ -32,7 +32,7 @@ namespace freicore
 	}
 
 	void BaseRunTimeConfig::initializeFromBuffer( const string& cfgStr )
-	{
+	{ TRACER_OP_START("BaseRunTimeConfig::initializeFromBuffer"); TRACER_OP_IN_DUMP(cfgStr);
         if (&cfgStr != &this->cfgStr)
             this->cfgStr = cfgStr;
 
@@ -65,7 +65,7 @@ namespace freicore
 
                 size_t predIdx = line.find_first_of('=') + 1;
 
-                string key = line.substr(0, predIdx-1);
+                string key = line.substr(0, predIdx-1); TRACER_START(key);
                 bal::trim(key);
 
                 if (m_variables.count(key) == 0)
@@ -80,7 +80,7 @@ namespace freicore
                     m_warnings << "Line " << lineNum << ": \"" << key << "\" has already been defined.\n";
                     continue;
                 }
-
+				TRACER_OP_START("get value for key"); TRACER_OP_IN_DUMP(key);
                 size_t valBegin = line.find_first_not_of("\t ", predIdx);
                 size_t valEnd = valBegin;
                 bool inQuote = false;
@@ -109,7 +109,7 @@ namespace freicore
                 value = UnquoteString(value);
                 bal::replace_all(value, "\\\"", "\"");
                 bal::replace_all(value, "true", "1");
-                bal::replace_all(value, "false", "0");
+                bal::replace_all(value, "false", "0"); TRACER_OP_OUT_DUMP(value); TRACER_OP_END("get value for key");
             }
         }
         catch (exception& e)
@@ -118,7 +118,7 @@ namespace freicore
         }
 
         // apply the new variable values
-        setVariables(newVars);
+        setVariables(newVars); TRACER_OP_END("BaseRunTimeConfig::initializeFromBuffer");
 	}
 
 	RunTimeVariableMap BaseRunTimeConfig::getVariables( bool hideDefaultValues )

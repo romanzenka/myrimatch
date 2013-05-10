@@ -129,20 +129,20 @@ namespace myrimatch
 
     private:
         void finalize()
-        {
+        { TRACER_OP_START("config finalize"); TRACER_LABEL(*this, "Myrimatch RunTimeConfig");
             if (bal::iequals(OutputFormat, "pepXML"))
                 outputFormat = pwiz::identdata::IdentDataFile::Format_pepXML;
             else if (bal::iequals(OutputFormat, "mzIdentML"))
                 outputFormat = pwiz::identdata::IdentDataFile::Format_MzIdentML;
             else
                 m_warnings << "Invalid value \"" << OutputFormat << "\" for OutputFormat\n";
-
-            decoyPrefix = DecoyPrefix.empty() ? "rev_" : DecoyPrefix;
-            automaticDecoys = DecoyPrefix.empty() ? false : true;
+			TRACER_OP_OUT_DUMP(outputFormat);
+            decoyPrefix = DecoyPrefix.empty() ? "rev_" : DecoyPrefix; TRACER_OP_OUT_DUMP(decoyPrefix);
+            automaticDecoys = DecoyPrefix.empty() ? false : true; TRACER_OP_OUT_DUMP(automaticDecoys);
 
             if (MonoisotopeAdjustmentSet.empty())
                 MonoisotopeAdjustmentSet.insert(0);
-
+			TRACER_OP_OUT_DUMP(MonoisotopeAdjustmentSet);
             // TODO: move CleavageRules parsing to its own class
             trim(CleavageRules); // trim flanking whitespace
 
@@ -203,9 +203,9 @@ namespace myrimatch
                     CleavageRulesStream >> tmpRuleSet;
                     cleavageAgentRegex = boost::regex(tmpRuleSet.asCleavageAgentRegex());
                 }
-            }
+            } TRACER_OP_OUT_DUMP(cleavageAgentRegex);
 
-            MaxMissedCleavages = MaxMissedCleavages < 0 ? 100000 : MaxMissedCleavages;
+            MaxMissedCleavages = MaxMissedCleavages < 0 ? 100000 : MaxMissedCleavages; TRACER_OP_OUT_DUMP(MaxMissedCleavages);
 
             // TODO: move fragmentation rule parsing to its own class
             vector<string> fragmentationRuleTokens;
@@ -257,14 +257,14 @@ namespace myrimatch
                     }
                 } else
                     m_warnings << "Invalid mode \"" << mode << "\" for FragmentationRule.\n";
-            }
-
+            } TRACER_OP_OUT_DUMP_R(defaultFragmentTypes, "freicore::FragmentTypesBitset", (defaultFragmentTypes[FragmentType_A]?string(" a"):string())+(defaultFragmentTypes[FragmentType_B]?string(" b"):string())+(defaultFragmentTypes[FragmentType_C]?string(" c"):string())+(defaultFragmentTypes[FragmentType_X]?string(" x"):string())+(defaultFragmentTypes[FragmentType_Y]?string(" y"):string())+(defaultFragmentTypes[FragmentType_Z]?string(" z"):string())+(defaultFragmentTypes[FragmentType_Z_Radical]?string(" z*"):string()));
+			TRACER_OP_OUT_DUMP(EstimateSearchTimeOnly);
             if( ProteinSamplingTime == 0 )
             {
                 if( EstimateSearchTimeOnly )
                     m_warnings << "ProteinSamplingTime = 0 disables EstimateSearchTimeOnly.\n";
-                EstimateSearchTimeOnly = 0;
-            }
+                EstimateSearchTimeOnly = 0; TRACER_OP_OUT_DUMP(EstimateSearchTimeOnly); TRACER_REASON(EstimateSearchTimeOnly, "ProteinSamplingTime = 0 disables EstimateSearchTimeOnly");
+            } TRACER_OP_OUT_DUMP(ProteinSamplingTime);
 
             // TODO: move mzToleranceRule to its own class
             bal::to_lower(PrecursorMzToleranceRule);
@@ -276,7 +276,7 @@ namespace myrimatch
                 precursorMzToleranceRule = MzToleranceRule_Avg;
             else
                 m_warnings << "Invalid mode \"" << PrecursorMzToleranceRule << "\" for PrecursorMzToleranceRule.\n";
-
+			TRACER_OP_OUT_DUMP(precursorMzToleranceRule);
             if (MonoisotopeAdjustmentSet.size() > 1 && (1000.0 + MonoPrecursorMzTolerance) - 1000.0 > 0.2)
                 m_warnings << "MonoisotopeAdjustmentSet should be set to 0 when the MonoPrecursorMzTolerance is wide.\n";
 
@@ -285,33 +285,33 @@ namespace myrimatch
             string cwd;
             cwd.resize( MAX_PATH );
             getcwd( &cwd[0], MAX_PATH );
-            WorkingDirectory = cwd.c_str();
+            WorkingDirectory = cwd.c_str(); TRACER_OP_OUT_DUMP(WorkingDirectory);
 
-            if( TicCutoffPercentage > 1.0 )
+			if( TicCutoffPercentage > 1.0 )
             {
-                TicCutoffPercentage /= 100.0;
+                TicCutoffPercentage /= 100.0; TRACER_OP_OUT_DUMP(TicCutoffPercentage); TRACER_REASON(TicCutoffPercentage, "The value was > 1.0, was divided by 100");
                 m_warnings << "TicCutoffPercentage must be between 0 and 1 (100%)\n";
             }
 
-
+			TRACER_OP_START("parse dynamic mods"); TRACER_OP_IN_DUMP(DynamicMods);
             if( !DynamicMods.empty() )
             {
                 try {dynamicMods = DynamicModSet( DynamicMods );}
                 catch (exception& e) {m_warnings << "Unable to parse DynamicMods \"" << DynamicMods << "\": " << e.what() << "\n";}
-            }
-
+            } TRACER_OP_OUT_DUMP_R(dynamicMods, "freicore::DynamicModSet", (string)dynamicMods); TRACER_OP_END("parse dynamic mods");
+			TRACER_OP_START("parse static mods"); TRACER_OP_IN_DUMP(StaticMods);
             if( !StaticMods.empty() )
             {
                 try {staticMods = StaticModSet( StaticMods );}
                 catch (exception& e) {m_warnings << "Unable to parse StaticMods \"" << StaticMods << "\": " << e.what() << "\n";}
-            }
-            
+            } TRACER_OP_OUT_DUMP_R(dynamicMods, "freicore::StaticModSet", (string)staticMods); TRACER_OP_END("parse static mods");
+            TRACER_OP_START("largest positive and negative mod mass"); TRACER_OP_INPUT(dynamicMods);
             BOOST_FOREACH(const DynamicMod& mod, dynamicMods)
             {
                 largestPositiveDynamicModMass = max(largestPositiveDynamicModMass, mod.modMass * MaxDynamicMods);
                 largestNegativeDynamicModMass = min(largestNegativeDynamicModMass, mod.modMass * MaxDynamicMods);
-            }
-
+            } TRACER_OP_OUT_DUMP(largestPositiveDynamicModMass); TRACER_OP_OUT_DUMP(largestNegativeDynamicModMass); TRACER_OP_END("largest positive and negative mod mass");
+			TRACER_OP_START("determine number of intensity/mz fidelity class counts"); TRACER_OP_IN_DUMP(ClassSizeMultiplier);
             if( ClassSizeMultiplier > 1 )
             {
                 minIntensityClassCount = int( ( pow( ClassSizeMultiplier, NumIntensityClasses ) - 1 ) / ( ClassSizeMultiplier - 1 ) );
@@ -320,7 +320,7 @@ namespace myrimatch
             {
                 minIntensityClassCount = NumIntensityClasses;
                 minMzFidelityClassCount = NumMzFidelityClasses;
-            }
+            } TRACER_OP_OUT_DUMP(minIntensityClassCount); TRACER_OP_OUT_DUMP(minMzFidelityClassCount); TRACER_OP_END("determine number of intensity/mz fidelity class counts");
             
             maxChargeStateFromSpectra = 0;
             maxFragmentChargeState = ( MaxFragmentChargeState > 0 ? MaxFragmentChargeState+1 : NumChargeStates );
@@ -370,7 +370,7 @@ namespace myrimatch
             cout << endl;*/
             //exit(1);
 
-            BaseRunTimeConfig::finalize();
+            BaseRunTimeConfig::finalize(); TRACER_OP_END("config finalize");
         }
     };
 
