@@ -16,7 +16,7 @@ my $db = '';
 GetOptions(
            'help|?' => \$help,
            'man' => \$man,
-           'db' => \$db,
+           'db:s' => \$db,
 #            'p|port=i' => \$port,
 #            'a:s' => \$host
           ) or pod2usage(-verbose => 2);
@@ -30,31 +30,62 @@ my $dbh;
 
 &main; exit;
 
+my $op_level = 0;
+my $prefix = '';
+
 sub op_start {
+	my ($id, $name, $file, $line) = @_;
+	$op_level++;
+	print "$prefix  / $name\t\t\t\t$file($line)\n";
+	$prefix .= '  |';
 }
 
 sub op_end {
+	my ($id, $name, $file, $line) = @_;
+	$op_level--;
+	$prefix = substr($prefix, 0, length($prefix) - 3);
+	print "$prefix   \\ $name \t\t\t\t$file($line)\n";
 }
 
 sub tr_label {
+	my ($id, $mem, $label) = @_;
+	print "$prefix label $mem $label\n";
 }
 
 sub tr_var {
+	my ($id, $mem, $name, $file, $line) = @_;
+	print "$prefix     $mem $name \t\t\t\t$file($line)\n";
 }
 
 sub tr_start {
+	my ($id, $mem) = @_;
+	print "$prefix start $mem\n";
 }
 
 sub tr_dump {
+	my ($id, $mem, $type, $value) = @_;
+	print "$prefix     $mem ($type) \t";
+	if(defined $value) {
+		print "$value";
+	} else {
+		print "(empty)";
+	}
+	print "\n";
 }
 
 sub tr_reason {
+	my ($id, $mem, $reason) = @_;
+	print "$prefix reason $mem $reason\n";
 }
 
 sub tr_op_in {
+	my ($id, $mem) = @_;
+	print "$prefix<--- $mem\n";
 }
 
 sub tr_op_out {
+	my ($id, $mem) = @_;
+	print "$prefix---> $mem\n";
 }
 
 sub main {
@@ -72,7 +103,8 @@ sub main {
 	my $linenum=0;
 
 	while(my $line = <>) {
-		if($line =~ /^\[TRACER\]\t([^\t]+)\t(.*)\n$/) {			
+		chomp $line;
+		if($line =~ /^\[TRACER\]\t([^\t]+)\t(.*)$/) {			
 			my $op = $1;
 			my @params = split(/\t/, $2);
 			$linenum++;
