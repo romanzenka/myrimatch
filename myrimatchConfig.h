@@ -304,7 +304,7 @@ namespace myrimatch
             {
                 try {staticMods = StaticModSet( StaticMods );}
                 catch (exception& e) {m_warnings << "Unable to parse StaticMods \"" << StaticMods << "\": " << e.what() << "\n";}
-            } TRACER_OP_OUT_DUMP_R(dynamicMods, "freicore::StaticModSet", (string)staticMods); TRACER_OP_END("parse static mods");
+            } TRACER_OP_OUT_DUMP_R(staticMods, "freicore::StaticModSet", (string)staticMods); TRACER_OP_END("parse static mods");
             TRACER_OP_START("largest positive and negative mod mass"); TRACER_OP_INPUT(dynamicMods);
             BOOST_FOREACH(const DynamicMod& mod, dynamicMods)
             {
