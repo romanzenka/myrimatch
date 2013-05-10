@@ -738,4 +738,6 @@ namespace freicore
 		}
 }
 
+#include "../tracer.hpp" // TRACER SUPPORT
+
 #endif
