@@ -34,7 +34,7 @@ void tracer_dump(const freicore::myrimatch::SpectraList &x);
 #define TRACER(variable, operation, heap, note) { cout << "[TRACER]" << '\t' << "dump" << '\t'; tracer_dump(variable); cout << '\t' << heap << '\t' << operation << '\t' << note << '\t' << __FILE__ << '\t' << __LINE__ << '\n'; }
 #define TRACER_P(variable, type, representation, operation, heap, note) { cout << "[TRACER]" << '\t' << "dump" << '\t' << &(variable) << '\t' << type << '\t' << representation <<  '\t' << heap << '\t' << operation << '\t' << note << '\t' << __FILE__ << '\t' << __LINE__ << '\n'; }
 // Reference a variable in an operation, do not dump all its info
-#define TRACER_REF(variable, operation, heap, note) { cout << "[TRACER]" << '\t' << "ref" << '\t', << &(variable) << heap << '\t' << operation << '\t' << note << '\t' << __FILE__ << '\t' << __LINE__ << '\n'; }
+#define TRACER_REF(variable, operation, heap, note) { cout << "[TRACER]" << '\t' << "ref" << '\t' << &(variable) << heap << '\t' << operation << '\t' << note << '\t' << __FILE__ << '\t' << __LINE__ << '\n'; }
 #define TRACER_UNLINK(variable) { cout << "[TRACER]" << '\t' << "unlink" << '\t' << &(variable) << '\t' __FILE__ << '\t' << __LINE__ << '\n'; }
 
 // Start operation of a given name
