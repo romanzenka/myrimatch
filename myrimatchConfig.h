@@ -304,7 +304,7 @@ namespace myrimatch
             {
                 try {staticMods = StaticModSet( StaticMods );}
                 catch (exception& e) {m_warnings << "Unable to parse StaticMods \"" << StaticMods << "\": " << e.what() << "\n";}
-            } TRACER_P(dynamicMods, "freicore::StaticModSet", (string)staticMods, WRITE, HEAP, "Parsed set of dynamic mods"); TRACER_OP_END("parse static mods");
+            } TRACER_P(staticMods, "freicore::StaticModSet", (string)staticMods, WRITE, HEAP, "Parsed set of dynamic mods"); TRACER_OP_END("parse static mods");
             TRACER_OP_START("largest positive and negative mod mass"); TRACER_REF(dynamicMods, READ, HEAP, "All the dynamic mods"); TRACER_REF(MaxDynamicMods, READ, HEAP, "Maximum number of dynamic mods");
             BOOST_FOREACH(const DynamicMod& mod, dynamicMods)
             {
@@ -345,7 +345,7 @@ namespace myrimatch
                 double insideProb = 2.0*cdf-1.0; TRACER(insideProb, WRITE, STACK, "probability that an error lies within (-massError, massError)");
                 // Save the mass errors and inside probabilities
                 massErrors.push_back(massError);
-                insideProbs.push_back(insideProb); TRACER_OP_END("Calculate bin prob value");
+                insideProbs.push_back(insideProb); TRACER_OP_END("Calculate bin mass error and probability value");
             } TRACER(massErrors, WRITE, HEAP, "Mass error vector"); TRACER(insideProbs, WRITE, HEAP, "Probability that the error is at least as big for the massError vector");
             // mzFidelity bin probablities are dependent on the number of bin. So,
             // compute the probabilities only once.

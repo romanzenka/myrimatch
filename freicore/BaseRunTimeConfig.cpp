@@ -64,7 +64,7 @@ namespace freicore
                 }
 
                 size_t predIdx = line.find_first_of('=') + 1;
-
+				TRACER_OP_START("get value for key");
                 string key = line.substr(0, predIdx-1); TRACER(key, WRITE, STACK, "Parameter name");
                 bal::trim(key);
 
@@ -80,7 +80,7 @@ namespace freicore
                     m_warnings << "Line " << lineNum << ": \"" << key << "\" has already been defined.\n";
                     continue;
                 }
-				TRACER_OP_START("get value for key"); TRACER_REF(key, READ, STACK, "key name");
+				
                 size_t valBegin = line.find_first_not_of("\t ", predIdx);
                 size_t valEnd = valBegin;
                 bool inQuote = false;
