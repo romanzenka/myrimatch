@@ -42,6 +42,9 @@ void tracer_dump(const freicore::myrimatch::SpectraList &x);
 // End operation of a given name
 #define TRACER_OP_END(name) { cout << "[TRACER]" << '\t' << "op_end" << '\t' << name << '\t' << __FILE__ << '\t' << __LINE__ << '\n'; }
 #define TRACER_S2S(variable) lexical_cast<string>(variable)
+// Defines scope of stack variables
+#define TRACER_BI { cout << "[TRACER]" << '\t' << "block_in" << '\n'; } {
+#define TRACER_BO { cout << "[TRACER]" << '\t' << "block_out" << '\n'; } }
 
 #else // !TRACER_ENABLED
 
@@ -51,6 +54,8 @@ void tracer_dump(const freicore::myrimatch::SpectraList &x);
 #define TRACER_OP_START(name)
 #define TRACER_OP_END(name)
 #define TRACER_S2S(variable)
+#define TRACER_BI
+#define TRACER_BO
 
 #endif // TRACER_ENABLED
 

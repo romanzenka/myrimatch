@@ -4,8 +4,26 @@
 
 #include "myrimatchSpectrum.h"
 
+void esc(const char *s) {
+	const char *ptr = s;
+	while(*ptr) {
+		if(*ptr == '\n') {
+			cout << "\\n";
+		} else if(*ptr == '\r') {
+			cout << "\\r";
+		} else if(*ptr == '\t') {
+			cout << "\\t";
+		} else if(*ptr == '\\') {
+			cout << "\\\\";
+		} else {
+			cout << *ptr;
+		}
+		ptr++;
+	}
+}
+
 void tracer_dump(const string& x) {
-	cout << &x << '\t' << "std::string" << '\t' << x;
+	cout << &x << '\t' << "std::string" << '\t'; esc(x.c_str());
 }
 
 void tracer_dump(const vector<string>& x) {

@@ -64,7 +64,7 @@ namespace freicore
                 }
 
                 size_t predIdx = line.find_first_of('=') + 1;
-				TRACER_OP_START("get value for key");
+				TRACER_OP_START("get value for key"); TRACER_BI;
                 string key = line.substr(0, predIdx-1); TRACER(key, WRITE, STACK, "Parameter name");
                 bal::trim(key);
 
@@ -109,7 +109,7 @@ namespace freicore
                 value = UnquoteString(value);
                 bal::replace_all(value, "\\\"", "\"");
                 bal::replace_all(value, "true", "1");
-                bal::replace_all(value, "false", "0"); TRACER(value, WRITE, HEAP, std::string("Value for ")+std::string(key)); TRACER_OP_END("get value for key");
+                bal::replace_all(value, "false", "0"); TRACER(value, WRITE, HEAP, std::string("Value for ")+std::string(key)); TRACER_BO; TRACER_OP_END("get value for key");
             }
         }
         catch (exception& e)

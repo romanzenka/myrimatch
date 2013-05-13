@@ -129,7 +129,7 @@ namespace myrimatch
 
     private:
         void finalize()
-        { TRACER_OP_START("RunTimeConfig::finalize"); TRACER_P(*this, "RunTimeConfig", "", READ, HEAP, "Full config of Myrimatch");
+        { TRACER_BI; TRACER_OP_START("RunTimeConfig::finalize"); TRACER_P(*this, "RunTimeConfig", "", READ, HEAP, "Full config of Myrimatch");
             if (bal::iequals(OutputFormat, "pepXML"))
                 outputFormat = pwiz::identdata::IdentDataFile::Format_pepXML;
             else if (bal::iequals(OutputFormat, "mzIdentML"))
@@ -334,7 +334,7 @@ namespace myrimatch
             mzFidelityLods.clear();
             // Divide the mass error distributions into 10 bins.
             for(int j = 1; j <= numBins; ++j) 
-            { TRACER_OP_START("Calculate bin mass error and probability value"); TRACER(j, READ, STACK, "Bin number");
+            { TRACER_OP_START("Calculate bin mass error and probability value"); TRACER_BI; TRACER(j, READ, STACK, "Bin number");
                 // Compute the mass error associated with each bin.
                 double massError = FragmentMzTolerance.value * ((double)j/(double)numBins); TRACER(massError, WRITE, STACK, "mass error for the bin - increases linearly");
                 // Compute the cumulative distribution function of massError 
@@ -345,14 +345,14 @@ namespace myrimatch
                 double insideProb = 2.0*cdf-1.0; TRACER(insideProb, WRITE, STACK, "probability that an error lies within (-massError, massError)");
                 // Save the mass errors and inside probabilities
                 massErrors.push_back(massError);
-                insideProbs.push_back(insideProb); TRACER_OP_END("Calculate bin mass error and probability value");
+                insideProbs.push_back(insideProb); TRACER_BO; TRACER_OP_END("Calculate bin mass error and probability value");
             } TRACER(massErrors, WRITE, HEAP, "Mass error vector"); TRACER(insideProbs, WRITE, HEAP, "Probability that the error is at least as big for the massError vector");
             // mzFidelity bin probablities are dependent on the number of bin. So,
             // compute the probabilities only once.
             // Compute the probability associated with each mass error bin
-            double denom = insideProbs.back(); TRACER(denom, WRITE, STACK, "The probability of the biggest bin, should be close to 1.0");
+            double denom = insideProbs.back(); TRACER_BI; TRACER(denom, WRITE, STACK, "The probability of the biggest bin, should be close to 1.0");
             for(int j = 0; j < numBins; ++j) 
-            { TRACER_OP_START("Calculate mz fidelity log odds ratio for bin"); TRACER(j, READ, STACK, "Bin number");
+            { TRACER_OP_START("Calculate mz fidelity log odds ratio for bin"); TRACER_BI; TRACER(j, READ, STACK, "Bin number");
                 double prob;
                 if(j==0) {
                     prob = insideProbs[j]/denom;
@@ -360,7 +360,7 @@ namespace myrimatch
                     prob = (insideProbs[j]-insideProbs[j-1])/denom;
                 } TRACER(prob, WRITE, STACK, "Probability that the value lies exactly in the particular bin");
                 // Compute the log odds ratio of GaussianProb to Uniform probability and save it
-                mzFidelityLods.push_back(log(prob*(double)numBins)); TRACER(mzFidelityLods.back(), WRITE, HEAP, "log(prob of the bin * numBins)"); TRACER_OP_END("Calculate mz fidelity log odds ratio for bin");
+                mzFidelityLods.push_back(log(prob*(double)numBins)); TRACER(mzFidelityLods.back(), WRITE, HEAP, "log(prob of the bin * numBins)"); TRACER_OP_END("Calculate mz fidelity log odds ratio for bin"); TRACER_BO;
             } TRACER(mzFidelityLods, WRITE, HEAP, "Calculated mz fidelity log odds ratios"); TRACER_OP_END("Calculate mz fidelity log odds ratio vector");
             /*cout << "Error-Probs:" << endl;
             for(int j = 0; j < numBins; ++j) 
@@ -370,7 +370,7 @@ namespace myrimatch
             cout << endl;*/
             //exit(1);
 
-            BaseRunTimeConfig::finalize(); TRACER_OP_END("RunTimeConfig::finalize");
+            BaseRunTimeConfig::finalize(); TRACER_BO; TRACER_OP_END("RunTimeConfig::finalize"); TRACER_BO;
         }
     };
 
