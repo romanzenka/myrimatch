@@ -46,7 +46,7 @@ namespace myrimatch
 	RunTimeConfig*					g_rtConfig;
 
 	int InitProcess( argList_t& args )
-	{
+	{	TRACER_OP_START("myrimatch::InitProcess"); TRACER(args, READ, HEAP, "Arguments");
 		//cout << g_hostString << " is initializing." << endl;
 		if( g_pid == 0 )
 		{
@@ -75,15 +75,15 @@ namespace myrimatch
 		{
 			if( args[i] == "-workdir" && i+1 <= args.size() )
 			{
-				chdir( args[i+1].c_str() );
+				chdir( args[i+1].c_str() ); TRACER(args[i+1], READ, HEAP, "Change working directory");
 				args.erase( args.begin() + i );
 			} else if( args[i] == "-cpus" && i+1 <= args.size() )
 			{
-				g_numWorkers = atoi( args[i+1].c_str() );
+				g_numWorkers = atoi( args[i+1].c_str() ); TRACER(g_numWorkers, WRITE, HEAP, "Number of workers");
 				args.erase( args.begin() + i );
 			} else if( args[i] == "-ignoreConfigErrors" )
 			{
-				ignoreConfigErrors = true;
+				ignoreConfigErrors = true; TRACER(ignoreConfigErrors, WRITE, HEAP, "Ignore configuration errors");
 			} else
 				continue;
 
@@ -91,8 +91,8 @@ namespace myrimatch
 			--i;
 		}
 
-		g_rtConfig = new RunTimeConfig(!ignoreConfigErrors);
-		g_rtSharedConfig = (BaseRunTimeConfig*) g_rtConfig;
+		g_rtConfig = new RunTimeConfig(!ignoreConfigErrors); TRACER_P(g_rtConfig, "RunTimeConfig", "", WRITE, HEAP, "Created runtime configuration");
+		g_rtSharedConfig = (BaseRunTimeConfig*) g_rtConfig; TRACER_P(g_rtSharedConfig, "BaseRunTimeConfig", "", WRITE, HEAP, "Shared runtime configuration (sans the extra parsed settings)");
 
 		if( g_pid == 0 )
 		{
@@ -102,7 +102,7 @@ namespace myrimatch
 				{
 					if( g_rtConfig->initializeFromFile( args[i+1] ) )
 					{
-						cerr << "Unable to find runtime configuration at \"" << args[i+1] << "\"." << endl;
+						cerr << "Unable to find runtime configuration at \"" << args[i+1] << "\"." << endl; TRACER_OP_END("myrimatch::InitProcess");
 						return 1;
 					}
 					args.erase( args.begin() + i );
@@ -116,7 +116,7 @@ namespace myrimatch
 
 			if( args.size() < 2 )
 			{
-				cerr << "Not enough arguments.\n\n" << usage << endl;
+				cerr << "Not enough arguments.\n\n" << usage << endl; TRACER_OP_END("myrimatch::InitProcess");
 				return 1;
 			}
 
@@ -139,9 +139,9 @@ namespace myrimatch
 				ReceiveConfigsFromRootProcess();
 			#endif
 		}
-
+		TRACER_OP_START("Override arguments using a list of variables");
 		// Command line overrides happen after config file has been distributed but before PTM parsing
-		RunTimeVariableMap vars = g_rtConfig->getVariables();
+		RunTimeVariableMap vars = g_rtConfig->getVariables(); TRACER(vars, WRITE, STACK, "Variable map");
 		for( RunTimeVariableMap::iterator itr = vars.begin(); itr != vars.end(); ++itr )
 		{
 			string varName;
@@ -152,14 +152,14 @@ namespace myrimatch
 				if( args[i].find( varName ) == 0 && i+1 <= args.size() )
 				{
 					//cout << varName << " " << itr->second << " " << args[i+1] << endl;
-					itr->second = args[i+1];
+					itr->second = args[i+1]; TRACER(varName, READ, STACK, "Variable name from map matched, erasing matching argument");
 					args.erase( args.begin() + i );
 					args.erase( args.begin() + i );
 					--i;
 				}
 			}
-		}
-
+		}  
+		TRACER(args, WRITE, HEAP, "Cleaned up argument list"); TRACER_OP_END("Override arguments using a list of variables");
 		g_rtConfig->setVariables( vars );
 
 		if( g_pid == 0 )
@@ -180,7 +180,7 @@ namespace myrimatch
 				{
                     if (!ignoreConfigErrors)
                     {
-                        cerr << "Error: unrecognized parameter \"" << args[i] << "\"" << endl;
+                        cerr << "Error: unrecognized parameter \"" << args[i] << "\"" << endl; TRACER_OP_END("myrimatch::InitProcess");
                         return 1;
                     }
 
@@ -193,30 +193,30 @@ namespace myrimatch
 
         if( g_rtConfig->ProteinDatabase.empty() )
 		{
-			if( g_pid == 0 ) cerr << "No FASTA protein database specified on command-line or in configuration file.\n\n" << usage << endl;
-			return 1;
+			if( g_pid == 0 ) cerr << "No FASTA protein database specified on command-line or in configuration file.\n\n" << usage << endl; TRACER_OP_END("myrimatch::InitProcess");
+			return 1; TRACER_OP_END("myrimatch::InitProcess");
 		}
         
         if (args.size() == 1)
         {
-            if( g_pid == 0 ) cerr << "No data sources specified.\n\n" << usage << endl;
-            return 1;
+            if( g_pid == 0 ) cerr << "No data sources specified.\n\n" << usage << endl; TRACER_OP_END("myrimatch::InitProcess");
+            return 1; TRACER_OP_END("myrimatch::InitProcess");
         }
-
+		TRACER_OP_END("myrimatch::InitProcess");
 		return 0;
 	}
 
 	int InitWorkerGlobals()
-	{
-		spectra.sort( spectraSortByID() );
+	{	TRACER_OP_START("myrimatch::InitWorkerGlobals"); TRACER_OP_START("sort spectra by id"); TRACER(spectra, READ, HEAP, "List of all spectra");
+		spectra.sort( spectraSortByID() ); TRACER(spectra, WRITE, HEAP, "Sorted list of all spectra"); TRACER_OP_END("sort spectra by id");
 
-		if( spectra.empty() )
-			return 0;
-
+		if( spectra.empty() ) {
+			TRACER_OP_END("myrimatch::InitWorkerGlobals"); return 0; }
+		TRACER_OP_START("Determine the maximum seen charge state"); TRACER(spectra, READ, HEAP, "List of all spectra");
 		// Determine the maximum seen charge state
 		BOOST_FOREACH(Spectrum* s, spectra)
 		    g_rtConfig->maxChargeStateFromSpectra = max(s->possibleChargeStates.back(), g_rtConfig->maxChargeStateFromSpectra);
-
+		TRACER(g_rtConfig->maxChargeStateFromSpectra, WRITE, HEAP, "Maximum charge from all spectra"); TRACER_OP_END("Determine the maximum seen charge state");
 		g_rtConfig->maxFragmentChargeState = ( g_rtConfig->MaxFragmentChargeState > 0 ? g_rtConfig->MaxFragmentChargeState+1 : g_rtConfig->maxChargeStateFromSpectra );
 
 		g_rtConfig->monoPrecursorMassTolerance.clear();
@@ -313,7 +313,7 @@ namespace myrimatch
             cout << "Min. effective peptide length is " << curMinPeptideLength << endl;
             cout << "Max. effective peptide length is " << curMaxPeptideLength << endl;
 		}
-
+		TRACER_OP_END("myrimatch::InitWorkerGlobals");
 		return 0;
 	}
 
