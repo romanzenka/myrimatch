@@ -11,33 +11,37 @@ $myrimatch_root = '..';
 
 ?>
 	<title>Myrimatch source: <?php echo("$file ($line)"); ?></title>
+	<script type="text/javascript" src="js/shCore.js"></script>
+	<script type="text/javascript" src="js/shBrushCpp.js"></script>
+	<link href="css/shCore.css" rel="stylesheet" type="text/css" />
+	<link href="css/shThemeDefault.css" rel="stylesheet" type="text/css" />
 </head>
 <body>
 	<h1><?php echo("$file ($line)"); ?></h1>
-<pre>
 <?php
 $f = file("$myrimatch_root/$file");
 
+$in_section = 0;
+
 foreach ($f as $linenum => $text) {
 	$l = $linenum+1;
-	echo("<a name=\"$l\">$l</a> ");
-	$style = '';
-	if($l >= $first && $l <= $last) {
-		$style = 'background: #dff';
+	if($l == $line && $in_section==1) {
+		echo("</pre>");
+		$in_section = 0;
+		echo("<a name=\"$line\"></a>");
 	}
-	if($l == $line) {
-		$style = 'background: #ff8';
-	}
-	if ($style <> '') {
-		echo "<span style=\"$style\">";
+	if($in_section == 0) {
+		echo("<pre class=\"brush: cpp; highlight: [$first, $last, $line], first-line: $l\">");
+		$in_section = 1;
 	}
 	echo(htmlspecialchars($text));
-	if ($style <> '') {
-		echo("</span>");
-	}
 }
 
 ?>
 	</pre>
+<script type="text/javascript">
+	SyntaxHighlighter.defaults['toolbar']=false;
+	SyntaxHighlighter.all();
+</script>
 </body>
 </html>
