@@ -23,12 +23,27 @@ $f = file("$myrimatch_root/$file");
 
 $in_section = 0;
 
+function close_section() {
+	global $in_section;
+	if($in_section==1) {
+		echo "</pre>";
+		$in_section = 0;
+	}
+}
+
 foreach ($f as $linenum => $text) {
 	$l = $linenum+1;
-	if($l == $line && $in_section==1) {
-		echo("</pre>");
-		$in_section = 0;
+	if($l == $line) {
+		close_section();
 		echo("<a name=\"$line\"></a>");
+	}
+	if($l == $first) {
+			close_section();
+			echo "<div style=\"background: #eff !important\">";
+	}
+	if($l == $last) {
+		close_section();
+		echo "</div>";
 	}
 	if($in_section == 0) {
 		echo("<pre class=\"brush: cpp; highlight: [$first, $last, $line], first-line: $l\">");
