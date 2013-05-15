@@ -41,15 +41,15 @@ foreach ($f as $linenum => $text) {
 			close_section();
 			echo "<div style=\"background: #eff !important\">";
 	}
-	if($l == $last) {
+	if($l-1 == $last) {
 		close_section();
 		echo "</div>";
 	}
 	if($in_section == 0) {
-		echo("<pre class=\"brush: cpp; highlight: [$first, $last, $line], first-line: $l\">");
+		echo("<pre class=\"brush: cpp; highlight: [$line], first-line: $l, tab-size: 8, smart-tabs: false\">\n");
 		$in_section = 1;
 	}
-	echo(htmlspecialchars($text));
+	echo('&#8203;'.htmlspecialchars($text));
 }
 
 ?>
