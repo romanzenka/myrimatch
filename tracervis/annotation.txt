@@ -1,0 +1,24 @@
+all
+Myrimatch
+Myrimatch is a proteomics search engine that matches mass spectra to theoretical spectra derived from a protein database.
+Its output is basically a best matching peptide for each spectrum.
+
+sort spectra by id
+Sort spectra
+It is not clear why is this operation performed. Possibly for performance reasons?
+The spectra are sorted by their ID.
+
+myrimatch::InitProcess
+Read parameters
+This operation reads the command-line parameters and prepares the search engine.
+
+myrimatch::InitWorkerGlobals
+Preprocess spectra
+Here we already know the list of spectra to be processed.
+We prepare the engine for work using this extra knowledge.
+
+Determine the maximum seen charge state
+Determine the maximum seen charge state
+Knowing what is the maximum charge state of a spectrum allows us to optimize the search space.
+For instance, we can determine what is the maximum peptide length (in amino acids) within our mass window.
+
