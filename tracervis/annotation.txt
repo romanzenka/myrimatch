@@ -22,3 +22,19 @@ Determine the maximum seen charge state
 Knowing what is the maximum charge state of a spectrum allows us to optimize the search space.
 For instance, we can determine what is the maximum peptide length (in amino acids) within our mass window.
 
+Spectrum::NormalizePeakIntensities
+Normalize peak intensities
+Square root of the intensity is calculated.
+The intensities are normalized in several separate regions using the most intense peak.
+Resulting intensity range is 0-50.
+
+Normalize peaks 0-50
+Normalize spectrum peaks to (0..50)
+The peak intensity is normalized using the highest peak in a particular region of the spectrum.
+The square root of intensities is being used.
+
+Normalize peak 0-50
+Normalize peak intensity to (0..50)
+The peak intensity is normalized using the highest peak in a particular region of the spectrum.
+The square root of original intensities is being used.
+

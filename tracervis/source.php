@@ -1,11 +1,14 @@
+<!DOCTYPE html>
 <html>
 <head>
+    <meta charset="UTF-8"/>
 <?php
 
 $file = $_GET['file'];
 $line = intval($_GET['line']);
 $first = isset($_GET['first']) ? intval($_GET['first']) : -1;
 $last = isset($_GET['last']) ? intval($_GET['last']) : -1;
+$code = isset($_GET['code']) ? $_GET['code'] : '';
 
 $myrimatch_root = '..';
 
@@ -17,11 +20,13 @@ $myrimatch_root = '..';
 	<link href="css/shThemeDefault.css" rel="stylesheet" type="text/css" />
 </head>
 <body>
-	<h1><?php echo("$file ($line)"); ?></h1>
 <?php
 $f = file("$myrimatch_root/$file");
 
 $in_section = 0;
+
+# How many lines above the highlighted line do we show top of the screen
+$offset = min(10, $line);
 
 function close_section() {
 	global $in_section;
@@ -33,7 +38,7 @@ function close_section() {
 
 foreach ($f as $linenum => $text) {
 	$l = $linenum+1;
-	if($l == $line) {
+	if($l+$offset == $line) {
 		close_section();
 		echo("<a name=\"$line\"></a>");
 	}
@@ -49,6 +54,11 @@ foreach ($f as $linenum => $text) {
 		echo("<pre class=\"brush: cpp; highlight: [$line], first-line: $l, tab-size: 8, smart-tabs: false\">\n");
 		$in_section = 1;
 	}
+    $unicodeChar = '\u261b'; $rightArrow = json_decode('"'.$unicodeChar.'"');
+    $unicodeChar = '\u261a'; $leftArrow = json_decode('"'.$unicodeChar.'"');
+    if($code != '') {
+        $text = str_replace($code, $rightArrow . $code . $leftArrow, $text);
+    }
 	echo('&#8203;'.htmlspecialchars($text));
 }
 

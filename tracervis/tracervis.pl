@@ -47,7 +47,7 @@ my %objects = (); # Map from MEM address -> object id
 sub add_code {
 	my ($id, $file, $line) = @_;
 	defined $file || die "$id: File not defined";
-	if (substr($file, 0, length($file_prefix)) eq $file_prefix) {
+	if (uc(substr($file, 0, length($file_prefix))) eq uc($file_prefix)) {
 		$file = substr($file, length($file_prefix));
 	}
 	$file =~ s/\\/\//g;
@@ -68,7 +68,7 @@ sub op_start {
 	$op{'id'} = $id;
 	$op{'name'} = $name;
 	$op{'code_start_id'} = $code;
-	$op{'parent_id'} = defined $op_stack[-1] ? $op_stack[-1]->{'id'} : 0;
+	$op{'parent_id'} = defined $op_stack[-1] ? $op_stack[-1]->{'id'} : -1;
         push(@op_stack, \%op);	
 }
 
@@ -93,14 +93,14 @@ sub tr_dump {
 	if(defined $objects{$mem}) {
 		$obj = $objects{$mem};
 	} else {
-		$obj = { 'id' => $id, 'name' => $name, 'type' => $type };
+		$obj = { 'id' => $id, 'type' => $type };
 		$objects{$mem} = $obj;
 		if($heap eq '2') {
 			# Stack: This object will get deallocated when leaving this stack frame
-			$mem_stack[-1]{$mem} = 1; 
+			$mem_stack[-1]{$mem} = 1;
 		}
 	}
-	$sth_insert_io->execute($id, $obj->{'id'}, $op_stack[-1]->{'id'}, $value, $operation, $note, $code) || die "Couldn't add io: " . $dbh->errstr;	
+	$sth_insert_io->execute($id, $obj->{'id'}, $op_stack[-1]->{'id'}, $name, $value, $operation, $note, $code) || die "Couldn't add io: " . $dbh->errstr;
 }
 
 sub tr_ref {
@@ -113,7 +113,7 @@ sub deallocate {
 	defined $objects{$mem} || die "$id: The object at memory address $mem was not defined.\n";
 	my $object = $objects{$mem};
 	$object->{'deallocated_time'} = $id;
-	$sth_insert_object->execute($object->{'id'}, $object->{'name'}, $object->{'type'}, $object->{'deallocated_time'});
+	$sth_insert_object->execute($object->{'id'}, $object->{'type'}, $object->{'deallocated_time'});
 	delete $objects{$mem}; 
 }
 
@@ -140,10 +140,10 @@ sub main {
 	$sth_insert_op = $dbh->prepare("INSERT INTO operation (operation_id, name, parent_id, code_start_id, code_end_id, terminated_time) VALUES (?, ?, ?, ?, ?, ?)") || die "Couldn't prepare statement: " . $dbh->error;
 	$dbh->do( "CREATE TABLE IF NOT EXISTS code (code_id INTEGER PRIMARY KEY, file TEXT, line INTEGER)" ) || die "Couldn't create table: ". $dbh->errstr;
 	$sth_insert_code = $dbh->prepare("INSERT INTO code (code_id, file, line) VALUES (?, ?, ?)") || die "Couldn't prepare statement: " . $dbh->errstr;
-	$dbh->do("CREATE TABLE IF NOT EXISTS object (object_id INTEGER PRIMARY KEY, name TEXT, type TEXT, deallocated_time INTEGER)") || die "Couldn't prepare statement: " . $dbh->error;
-	$sth_insert_object = $dbh->prepare("INSERT INTO object (object_id, name, type, deallocated_time) VALUES (?, ?, ?, ?)") || die "Couldn't prepare statement: " . $dbh->errstr;	
-	$dbh->do("CREATE TABLE IF NOT EXISTS io (io_id INTEGER PRIMARY KEY, object_id INTEGER, operation_id INTEGER, value TEXT, readwrite INTEGER, note TEXT, code_id INTEGER)") || die "Couldn't prepare statement: " . $dbh->error;
-	$sth_insert_io = $dbh->prepare("INSERT INTO io (io_id, object_id, operation_id, value, readwrite, note, code_id) VALUES (?, ?, ?, ?, ?, ?, ?)") || die "Couldn't prepare statement: " . $dbh->errstr;	
+	$dbh->do("CREATE TABLE IF NOT EXISTS object (object_id INTEGER PRIMARY KEY, type TEXT, deallocated_time INTEGER)") || die "Couldn't prepare statement: " . $dbh->error;
+	$sth_insert_object = $dbh->prepare("INSERT INTO object (object_id, type, deallocated_time) VALUES (?, ?, ?)") || die "Couldn't prepare statement: " . $dbh->errstr;
+	$dbh->do("CREATE TABLE IF NOT EXISTS io (io_id INTEGER PRIMARY KEY, object_id INTEGER, operation_id INTEGER, name TEXT, value TEXT, readwrite INTEGER, note TEXT, code_id INTEGER)") || die "Couldn't prepare statement: " . $dbh->error;
+	$sth_insert_io = $dbh->prepare("INSERT INTO io (io_id, object_id, operation_id, name, value, readwrite, note, code_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)") || die "Couldn't prepare statement: " . $dbh->errstr;
 
 	my $linenum=0;
 
@@ -152,11 +152,10 @@ sub main {
 
 	while(my $line = <>) {
 		chomp $line;
-		if($line =~ /^\[TRACER\]\t([^\t]+)\t(.*)$/) {			
+		if($line =~ /^\[TRACER\]\t([^\t]+)\t?(.*)$/) {			
 			my $op = $1;
 			my @params = split(/\t/, $2);
 			$linenum++;
-
 			if($op eq 'op_start') {
 				op_start($linenum, @params);
 			} elsif($op eq 'op_end') {
@@ -165,7 +164,14 @@ sub main {
 				tr_dump($linenum, @params);
 			} elsif($op eq 'ref') {
 				tr_ref($linenum, @params); 
+			} elsif($op eq 'block_in') {
+				block_in($linenum, @params);
+			} elsif($op eq 'block_out') {
+				block_out($linenum, @params);
 			}
+		}
+		if($linenum % 10000 == 0) {
+			print STDERR "$linenum\n";
 		}
 	}
 
