@@ -129,15 +129,15 @@ namespace myrimatch
 
     private:
         void finalize()
-        { TRACER_BI; TRACER_OP_START("RunTimeConfig::finalize"); TRACER_P(*this, "RunTimeConfig", "", READ, HEAP, "Full config of Myrimatch");
+        { TRACER_BI; TRACER_OP_START("RunTimeConfig::finalize"); TRACER_P(*this, "RunTimeConfig", "", READ, HEAP, "Full config of Myrimatch"); TRACER(OutputFormat, READ, HEAP, "Output format parameter");
             if (bal::iequals(OutputFormat, "pepXML"))
                 outputFormat = pwiz::identdata::IdentDataFile::Format_pepXML;
             else if (bal::iequals(OutputFormat, "mzIdentML"))
                 outputFormat = pwiz::identdata::IdentDataFile::Format_MzIdentML;
             else
                 m_warnings << "Invalid value \"" << OutputFormat << "\" for OutputFormat\n";
-			TRACER(outputFormat, WRITE, HEAP, "File format to be produced");
-            decoyPrefix = DecoyPrefix.empty() ? "rev_" : DecoyPrefix; TRACER(decoyPrefix, WRITE, HEAP, "Prefix for decoy sequences");
+			TRACER_P(outputFormat, "pwiz::identdata::IdentDataFile::Format", lexical_cast<string>(outputFormat), WRITE, HEAP, "File format to be produced");
+            decoyPrefix = DecoyPrefix.empty() ? "rev_" : DecoyPrefix; TRACER(DecoyPrefix, READ, HEAP, "Prefix string for decoy sequences"); TRACER(decoyPrefix, WRITE, HEAP, "Prefix for decoy sequences");
             automaticDecoys = DecoyPrefix.empty() ? false : true; TRACER(automaticDecoys, WRITE, HEAP, "Automatically determine decoy prefixes");
 
             if (MonoisotopeAdjustmentSet.empty())
@@ -276,7 +276,7 @@ namespace myrimatch
                 precursorMzToleranceRule = MzToleranceRule_Avg;
             else
                 m_warnings << "Invalid mode \"" << PrecursorMzToleranceRule << "\" for PrecursorMzToleranceRule.\n";
-			TRACER(precursorMzToleranceRule, WRITE, HEAP, "Parsed precursor tolerance rule (0-auto, 1-monoisotopic mass, 2-average mass)");
+			TRACER_P(precursorMzToleranceRule, "freicore::myrimatch::MzToleranceRule", lexical_cast<string>(precursorMzToleranceRule), WRITE, HEAP, "Parsed precursor tolerance rule (0-auto, 1-monoisotopic mass, 2-average mass)");
             if (MonoisotopeAdjustmentSet.size() > 1 && (1000.0 + MonoPrecursorMzTolerance) - 1000.0 > 0.2)
                 m_warnings << "MonoisotopeAdjustmentSet should be set to 0 when the MonoPrecursorMzTolerance is wide.\n";
 

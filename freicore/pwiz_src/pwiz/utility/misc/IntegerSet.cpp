@@ -176,13 +176,13 @@ PWIZ_API_DECL void IntegerSet::insert(int a, int b)
 
 
 PWIZ_API_DECL void IntegerSet::parse(const std::string& intervalList)
-{
+{ TRACER_OP_START("Parse integer set"); TRACER(intervalList, READ, HEAP, "Intervals that define the integer set");
     istringstream iss(intervalList);
     vector<Interval> intervals;
     copy(istream_iterator<Interval>(iss), istream_iterator<Interval>(), back_inserter(intervals));
     for (vector<Interval>::const_iterator it=intervals.begin(); it!=intervals.end(); ++it)
         insert(*it);
-}
+TRACER_P(*this, "pwiz::util::IntegerSet", lexical_cast<string>(*this), WRITE, HEAP, "Parsed integer set"); TRACER_OP_END("Parse integer set"); }
 
 
 PWIZ_API_DECL IntegerSet::const_iterator IntegerSet::begin() const 

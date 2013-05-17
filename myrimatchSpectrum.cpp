@@ -222,44 +222,44 @@ namespace myrimatch
        Ideally, this function has to be called prior to spectrum filtering.             
     */
     void Spectrum::NormalizePeakIntensities()
-    {
+    { TRACER_OP_START("Spectrum::NormalizePeakIntensities"); TRACER_BI; TRACER(precursorMassHypotheses.back().mass, READ, HEAP, "maximum mass from the precursor mass hypotheses for this spectrum");
         // Get the number of bins and bin width for the processed peak array
-        double massCutOff = precursorMassHypotheses.back().mass + 50;
-
+        double massCutOff = precursorMassHypotheses.back().mass + 50; TRACER(massCutOff, WRITE, STACK, "mass cutoff"); 
+        TRACER(binWidth, READ, HEAP, "Bin width - 1 proton mass");
         int maxBins;
         if (massCutOff > 512)
             maxBins = (int) ceil(massCutOff / 1024) * 1024;
         else
             maxBins = 512;
-        
+        TRACER(maxBins, WRITE, STACK, "max number of bins");  TRACER(peakPreData, READ, HEAP, "Peak data for the spectrum");
         // Detemine the max mass of a fragmet peak.
-        double maxPeakMass = peakPreData.rbegin()->first;
-
+        double maxPeakMass = peakPreData.rbegin()->first; TRACER(maxPeakMass, WRITE, STACK, "maximum peak mass"); 
+        TRACER_OP_START("section spectrum into regions, find base peaks");
         // Section the original peak array in 10 regions and find the
         // base peak in each region. Also, square-root the peak intensities
-        const int numberOfRegions = 10;
+        const int numberOfRegions = 10; TRACER(numberOfRegions, READ, STACK, "number of regions"); 
 
-        vector<float> basePeakIntensityByRegion(numberOfRegions, 1);
-        int regionSelector = (int) (maxPeakMass / numberOfRegions);
+        vector<float> basePeakIntensityByRegion(numberOfRegions, 1); TRACER(basePeakIntensityByRegion, WRITE, STACK, "initial base peak intensity for each region"); 
+        int regionSelector = (int) (maxPeakMass / numberOfRegions); /* ROMAN - for better output */ int prevNormalizationIndex = -1; TRACER(regionSelector, WRITE, STACK, "region size");  
         for(PeakPreData::iterator itr = peakPreData.begin(); itr != peakPreData.end(); ++itr)
-        {
-            itr->second = sqrt(itr->second);
-            int mzBin = round(itr->first / binWidth);
-            int normalizationIndex = mzBin / regionSelector;
+        { TRACER_BI; TRACER(itr->second, READ, HEAP, "peak intensity");
+            itr->second = sqrt(itr->second); TRACER(itr->second, WRITE, HEAP, "sqrt peak intensity");
+            int mzBin = round(itr->first / binWidth); 
+            int normalizationIndex = mzBin / regionSelector; /* ROMAN */ if(prevNormalizationIndex!=normalizationIndex) { TRACER(itr->first, READ, HEAP, "Peak mass starting new region"); TRACER(normalizationIndex, WRITE, STACK, "Region number"); prevNormalizationIndex = normalizationIndex; }
             if( IS_VALID_INDEX( normalizationIndex,numberOfRegions ) )
                 basePeakIntensityByRegion[normalizationIndex] = max(basePeakIntensityByRegion[normalizationIndex],
                                                                     itr->second);
-        }
-
+        TRACER_BO; } TRACER(basePeakIntensityByRegion, WRITE, STACK, "final base peak intensity for each region"); 
+        TRACER_OP_END("section spectrum into regions, find base peaks"); TRACER_OP_START("Normalize peaks 0-50");
         // Normalize peaks in each region from 0 to 50. 
         // Use base peak in each region for normalization. 
         for(PeakPreData::iterator itr = peakPreData.begin(); itr != peakPreData.end(); ++itr)
-        {
-            int mzBin = round(itr->first / binWidth);
-            int normalizationIndex = mzBin / regionSelector;
-            if( IS_VALID_INDEX( normalizationIndex,numberOfRegions ) )
-                peakData[itr->first].normalizedIntensity = (itr->second / basePeakIntensityByRegion[normalizationIndex]) * 50;
-        }
+        { TRACER_OP_START("Normalize peak 0-50"); TRACER_OP_START("determine peak region"); TRACER(itr->first, READ, HEAP, "peak m/z"); TRACER(binWidth, READ, HEAP, "bin width");
+            int mzBin = round(itr->first / binWidth); TRACER(mzBin, WRITE, STACK, "bin number");
+            int normalizationIndex = mzBin / regionSelector; TRACER(regionSelector, READ, STACK, "region size"); TRACER(normalizationIndex, WRITE, STACK, "peak region"); TRACER_OP_END("determine peak region"); TRACER(normalizationIndex, READ, STACK, "peak region");
+            if( IS_VALID_INDEX( normalizationIndex,numberOfRegions ) ) /* ROMAN */ { TRACER(itr->second, READ, HEAP, "sqrt peak intensity"); TRACER(basePeakIntensityByRegion[normalizationIndex], READ, STACK, "max intensity for region"); 
+                peakData[itr->first].normalizedIntensity = (itr->second / basePeakIntensityByRegion[normalizationIndex]) * 50; TRACER(peakData[itr->first].normalizedIntensity, WRITE, HEAP, "normalized peak intensity"); } else { TRACER(peakData[itr->first].normalizedIntensity, READ, HEAP, "Unchanged normalized intensity"); }
+        TRACER_OP_END("Normalize peak 0-50"); } TRACER_BO; TRACER_OP_END("Normalize peaks 0-50"); TRACER_OP_END("Spectrum::NormalizePeakIntensities");
     }
 
     // Assign an intensity of 50 to fragment ions. 

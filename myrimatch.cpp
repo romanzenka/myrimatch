@@ -105,12 +105,12 @@ namespace myrimatch
 						cerr << "Unable to find runtime configuration at \"" << args[i+1] << "\"." << endl; TRACER_OP_END("myrimatch::InitProcess");
 						return 1;
 					}
-					args.erase( args.begin() + i );
+					args.erase( args.begin() + i ); TRACER(args, WRITE, HEAP, "Removing the -cfg key");
 
 				} else
 					continue;
 
-				args.erase( args.begin() + i );
+				args.erase( args.begin() + i ); TRACER(args, WRITE, HEAP, "Removing the -cfg value");
 				--i;
 			}
 
@@ -139,9 +139,9 @@ namespace myrimatch
 				ReceiveConfigsFromRootProcess();
 			#endif
 		}
-		TRACER_OP_START("Override arguments using a list of variables");
+		TRACER_OP_START("Override arguments using a list of variables"); TRACER(args, READ, HEAP, "Arguments before cleanup");
 		// Command line overrides happen after config file has been distributed but before PTM parsing
-		RunTimeVariableMap vars = g_rtConfig->getVariables(); TRACER(vars, WRITE, STACK, "Variable map");
+		RunTimeVariableMap vars = g_rtConfig->getVariables(); TRACER(vars, READ, STACK, "Variable map");
 		for( RunTimeVariableMap::iterator itr = vars.begin(); itr != vars.end(); ++itr )
 		{
 			string varName;
@@ -152,7 +152,7 @@ namespace myrimatch
 				if( args[i].find( varName ) == 0 && i+1 <= args.size() )
 				{
 					//cout << varName << " " << itr->second << " " << args[i+1] << endl;
-					itr->second = args[i+1]; TRACER(varName, READ, STACK, "Variable name from map matched, erasing matching argument");
+					itr->second = args[i+1]; TRACER(itr->second, WRITE, HEAP, "Changed value in variable map"); TRACER(varName, READ, STACK, "Variable name from map matched, erasing matching argument");
 					args.erase( args.begin() + i );
 					args.erase( args.begin() + i );
 					--i;
