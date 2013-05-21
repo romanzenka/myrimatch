@@ -1,5 +1,7 @@
 <?php
 
+include_once "values.php";
+
 # Code for rendering objects into HTML
 
 #### Code links ####
@@ -57,6 +59,21 @@ function render_code_link($code_id, $code='') {
     return '<a href="' . get_code_url($code_id, $code) . '" title="'.$code.'"><i class="icon-tasks"></i></a>';
 }
 
+# Render a value
+function render_value($value, $id, $type) {
+    $result = '';
+    if($type == 'std::vector<float>') {
+        $result .= vis_vector($value, $id);
+    } else if($type == 'freicore::PeakPreData') {
+        $result .= vis_spectrum($value, $id);
+    } else if($type == 'freicore::myrimatch::Spectrum::PeakData') {
+        $result .= vis_spectrum($value, $id);
+    } else {
+        $result .=  '<pre>' . stripcslashes($value) . '</pre>';
+    }
+    return $result;
+}
+
 # The IO link can either reference the object it is input/outputting
 # .. or the operation
 function render_io($r, $reference = 'object', $variable_name='') {
@@ -74,9 +91,10 @@ function render_io($r, $reference = 'object', $variable_name='') {
             break;
     }
     // If we want to link to object, use the note for the operation to link to it
+    $object = get_object($r['object_id']);
     $result .= '<td>';
     if($reference == 'object') {
-        $result .=  get_object_link(get_object($r['object_id']), $r['note'], $r['operation_id']);
+        $result .=  get_object_link($object, $r['note'], $r['operation_id']);
         $result .= '</td><td>';
     } else {
         $result .= $r['note'];
@@ -85,7 +103,7 @@ function render_io($r, $reference = 'object', $variable_name='') {
     }
     $result .= '</td><td>';
     if ($r['value'] != '') {
-        $result .=  '<pre>' . stripcslashes($r['value']) . '</pre>';
+        $result .= render_value($r['value'], $r['id'], $object['type']);
     }
     $result .= '</td><td>';
     $result .= render_code_link($r['code_id'], $r['name']);
