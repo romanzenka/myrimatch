@@ -1,15 +1,28 @@
 <?php
 // Visualize values of specific types
 
-// A vector of numbers
-function vis_vector($vector, $id) {
+function parse_vector($vector) {
     $items = preg_split('/\\\\t/', $vector);
-    $ints = array();
+    $values = array();
     foreach($items as $i) {
-        $ints[] = intval($i);
+        $values[] = doubleval($i);
     }
-    $maxval = max($ints);
-    $num = count($ints);
+    return $values;
+}
+
+// A vector of numbers
+function vis_vector($vector, $id, $prev_vector='') {
+    $values = parse_vector($vector);
+    $prev_values = null;
+    $prev = false;
+    if($prev_vector != '') {
+        $prev_values = parse_vector($prev_vector);
+        if(count($prev_values)==count($values)) {
+            $prev = true;
+        }
+    }
+    $maxval = max($values);
+    $num = count($values);
     $width = 500;
     $height = 50;
     $bar_width = $width/$num;
@@ -26,9 +39,17 @@ function vis_vector($vector, $id) {
         ctx.fillStyle = '#FF0000';
 <?php
     if($maxval > 0) {
-        foreach($ints as $x => $y) {
+        foreach($values as $x => $y) {
             $xpos = $width * $x / $num;
             $h = $height * $y / $maxval;
+            if($prev) {
+                $prev_value = $prev_values[$x];
+                if($y==$prev_value) {
+                    echo 'ctx.fillStyle = \'#000000\';';
+                } else {
+                    echo 'ctx.fillStyle = \'#FF0000\';';
+                }
+            }
             echo "ctx.fillRect($xpos, ".($height-$h).", $bar_width, $h);";
         }
     }
@@ -41,7 +62,9 @@ function vis_vector($vector, $id) {
     return $result;
 }
 
-function vis_spectrum($data, $id) {
+// Parse a spectrum string (tab separated, comma separated mz/int pairs)
+// into two arrays - mzs and ints. Return an array containing those two as sub-arrays.
+function parse_spectrum($data) {
     $items = preg_split('/\\\\t/', $data);
     $mzs = array();
     $ints = array();
@@ -50,6 +73,16 @@ function vis_spectrum($data, $id) {
         $mzs[] = doubleval($parts[0]);
         $ints[] = doubleval($parts[1]);
     }
+    $result = array();
+    $result[] = $mzs;
+    $result[] = $ints;
+    return $result;
+}
+
+function vis_spectrum($data, $id) {
+    $mzsInts = parse_spectrum($data);
+    $mzs = $mzsInts[0];
+    $ints = $mzsInts[1];
     $maxIntensity = max($ints);
     $minX = min($mzs);
     $maxX = max($mzs);

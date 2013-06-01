@@ -24,6 +24,7 @@ echo '<h2><span style="color: #ddd">' . htmlspecialchars($object['type']) . '</s
 
 
 echo '<table class="table table-condensed">';
+$prev_io = null;
 foreach($ios as $io) {
     if($io['operation_id'] == $operation_id) {
         echo "<tr class=\"highlight\">";
@@ -31,8 +32,9 @@ foreach($ios as $io) {
         echo "<tr>";
     }
     echo '<td>'.$io['id'].'</td>';
-    echo render_io($io, 'operation', $name);
+    echo render_io($io, 'operation', $name, $prev_io);
     echo "</tr>";
+    $prev_io = $io;
 }
 echo '</table>';
 

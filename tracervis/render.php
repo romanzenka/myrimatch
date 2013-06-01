@@ -60,10 +60,10 @@ function render_code_link($code_id, $code='') {
 }
 
 # Render a value
-function render_value($value, $id, $type) {
+function render_value($value, $id, $type, $prev_value='') {
     $result = '';
     if($type == 'std::vector<float>') {
-        $result .= vis_vector($value, $id);
+        $result .= vis_vector($value, $id, $prev_value);
     } else if($type == 'freicore::PeakPreData') {
         $result .= vis_spectrum($value, $id);
     } else if($type == 'freicore::myrimatch::Spectrum::PeakData') {
@@ -76,7 +76,11 @@ function render_value($value, $id, $type) {
 
 # The IO link can either reference the object it is input/outputting
 # .. or the operation
-function render_io($r, $reference = 'object', $variable_name='') {
+# $r - loaded IO object
+# $reference - link to the object details when 'object', link to the operation details when 'operation'
+# $variable_name - override for the variable name, when '', no override
+# $prev_r - a previous IO referring to the same object (to highlight differences), or '' when none available
+function render_io($r, $reference = 'object', $variable_name='', $prev_r=null) {
     $result = '';
     # Arrow for read/write/view
     switch ($r['readwrite']) {
@@ -103,7 +107,8 @@ function render_io($r, $reference = 'object', $variable_name='') {
     }
     $result .= '</td><td>';
     if ($r['value'] != '') {
-        $result .= render_value($r['value'], $r['id'], $object['type']);
+        $previous_value = $prev_r ? $prev_r['value'] : '';
+        $result .= render_value($r['value'], $r['id'], $object['type'], $previous_value);
     }
     $result .= '</td><td>';
     $result .= render_code_link($r['code_id'], $r['name']);
