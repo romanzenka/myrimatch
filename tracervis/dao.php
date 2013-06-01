@@ -5,7 +5,7 @@ include_once "annotations.php";
 function dao_open() {
     global $db, $operation_stmt, $code_ref_stmt, $io_stmt, $object_stmt, $io_for_object_stmt;
 
-    $db = new SQlite3("test.sq3", SQLITE3_OPEN_READONLY);
+    $db = new SQlite3("test/test.sq3", SQLITE3_OPEN_READONLY);
     # Get operation for a given id
     $operation_stmt = $db->prepare("SELECT operation_id as id, name, parent_id, code_start_id, code_end_id, terminated_time FROM operation WHERE operation_id = :id");
     # get a reference to code by reference id
