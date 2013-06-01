@@ -500,7 +500,7 @@ namespace freicore
 		TRACER_METHOD_END("PeakSpectrum::FilterByTIC"); }
 
 		void FilterByPeakCount( size_t maxPeakCount )
-		{ TRACER_METHOD_BEGIN("PeakSpectrum::FilterByPeakCount"); TRACER(maxPeakCount, READ, STACK, "Maximum peak count");
+		{ TRACER_METHOD_START("PeakSpectrum::FilterByPeakCount"); TRACER(maxPeakCount, READ, STACK, "Maximum peak count");
 			if( !peakPreData.empty() )
 			{
 				// Sort peak list in descending order of intensity

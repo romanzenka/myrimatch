@@ -97,6 +97,22 @@ void tracer_dump(const vector<float> *x) {
 	}
 }
 
+void tracer_dump(const vector<int> *x) {
+	cout << x << '\t' << "std::vector<int>" << '\t';
+	bool tab = false;
+	BOOST_FOREACH(int v, *x) {
+		if(tab) {
+			cout <<  "\\t";
+		}
+		tab = true;
+		cout << v;
+	}
+}
+
+void tracer_dump(const size_t *x) {
+	cout << x << '\t' << "size_t" << '\t' << *x;
+}
+
 void tracer_dump(const int *x) {
 	cout << x << '\t' << "int" << '\t' << *x;
 }
@@ -165,6 +181,50 @@ void tracer_dump(const boost::container::flat_map<double, freicore::myrimatch::P
         tab = true;
         cout << mz << ", " << normalizedIntensity;
     }
+}
+
+void tracer_dump(const freicore::PrecursorMassHypothesis *x) {
+	cout << x << '\t' << "freicore::PrecursorMassHypothesis" << '\t';
+	cout << "m:" << x->mass << ", " << "z:" << x->charge;
+}
+
+void tracer_dump(const vector<freicore::PrecursorMassHypothesis> *x) {
+    cout << x << '\t' << "std::vector<freicore::PrecursorMassHypothesis>" << '\t';
+	bool tab = false;
+	BOOST_FOREACH(freicore::PrecursorMassHypothesis m, *x) {
+		if(tab) {
+			cout <<  "\\t";
+		}
+		tab = true;
+		cout << "m:" << m.mass << ", " << "z:" << m.charge;
+	}
+}
+
+void tracer_dump(const pwiz::chemistry::MZTolerance *x) {
+	cout << x << '\t' << "pwiz::chemistry::MZTolerance" << '\t';
+	cout << x->value << (x->units == pwiz::chemistry::MZTolerance::MZ ? "m/z" : "ppm");	
+}
+
+void tracer_dump(const freicore::MassType *x) {
+	cout << x << '\t' << "freicore::MassType" << '\t';
+	cout << (*x == freicore::MassType_Monoisotopic ? "monoisotopic" : "average");	
+}
+
+void tracer_dump(const freicore::myrimatch::MzToleranceRule *x) {
+	cout << x << '\t' << "freicore::MzToleranceRule" << '\t';
+	switch(*x) {
+	case freicore::myrimatch::MzToleranceRule_Auto:
+		cout << "auto";
+		break;
+	case freicore::myrimatch::MzToleranceRule_Mono:
+		cout << "mono";
+		break;
+	case freicore::myrimatch::MzToleranceRule_Avg:
+		cout << "avg";
+		break;
+	default:
+		cout << "<unknown>";
+	}
 }
 
 

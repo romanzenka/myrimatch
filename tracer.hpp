@@ -12,8 +12,6 @@ using std::string;
 using std::map;
 using std::vector;
 
-namespace pwiz { namespace util { class IntegerSet; } }
-
 #define TRACER_ENABLED 1
 #define HEAP 1
 #define STACK 2
@@ -24,13 +22,25 @@ namespace pwiz { namespace util { class IntegerSet; } }
 
 #ifdef TRACER_ENABLED
 
+namespace pwiz {
+	namespace chemistry {
+		struct MZTolerance;
+	}
+	namespace util { 
+		class IntegerSet;
+	}
+}
+
 namespace freicore {
     class PeakPreData;
     struct BaseSpectrum;
+	struct PrecursorMassHypothesis;
+	enum MassType;
     namespace myrimatch {
         struct Spectrum;
         struct PeakInfo;
         struct SpectraList;
+		enum MzToleranceRule;
     }
 }
 
@@ -41,6 +51,8 @@ void tracer_dump(const vector<string> *x);
 void tracer_dump(const map<string, string> *x);
 void tracer_dump(const vector<double> *x);
 void tracer_dump(const vector<float> *x);
+void tracer_dump(const vector<int> *x);
+void tracer_dump(const size_t *x);
 void tracer_dump(const int *x);
 void tracer_dump(const float *x);
 void tracer_dump(const double *x);
@@ -52,6 +64,12 @@ void tracer_dump(const freicore::PeakPreData *x);
 void tracer_dump(const freicore::myrimatch::SpectraList *x);
 void tracer_dump(const freicore::myrimatch::Spectrum *x);
 void tracer_dump(const freicore::BaseSpectrum *x);
+void tracer_dump(const vector<string> *x);
+void tracer_dump(const freicore::PrecursorMassHypothesis *x);
+void tracer_dump(const vector<freicore::PrecursorMassHypothesis> *x);
+void tracer_dump(const pwiz::chemistry::MZTolerance *x);
+void tracer_dump(const freicore::MassType *x);
+void tracer_dump(const freicore::myrimatch::MzToleranceRule *x);
 
 void tracer_dump(const PeakSpectrumData *x);
 

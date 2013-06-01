@@ -43,52 +43,52 @@ namespace myrimatch
 	{   TRACER_METHOD_START("Spectrum::Preprocess");
 		PeakPreData::iterator itr;
 		PeakPreData::reverse_iterator r_itr;
-
+		TRACER(mzOfPrecursor, READ, HEAP, "m/z of precursor ion"); 
 		if( mzOfPrecursor < 1 )
-		{
-			peakPreData.clear();
-			return;
+		{ TRACER_OP_START("Clear the preprocessed peaks");
+			peakPreData.clear(); TRACER(peakPreData, WRITE, HEAP, "Clearing the preprocessed peaks"); TRACER_OP_END("Clear the preprocessed peaks");
+			TRACER_METHOD_END("Spectrum::Preprocess"); return;
 		}
 
-		if( peakPreData.empty() )
-			return;
-
+		if( peakPreData.empty() ) {
+			TRACER_METHOD_END("Spectrum::Preprocess"); return; }
+		TRACER(precursorMzType, READ, HEAP, "precursor m/z type"); TRACER(g_rtConfig->precursorMzToleranceRule, READ, HEAP, "precursor m/z tolerance rule");
         // calculate precursor mass hypotheses
         if (precursorMzType == MassType_Monoisotopic || g_rtConfig->precursorMzToleranceRule == MzToleranceRule_Mono)
-        {
+        {	TRACER_OP_START("Generate monoisotopic precursor hypotheses"); TRACER(g_rtConfig->MonoisotopeAdjustmentSet, READ, HEAP, "monoisotope adjustment set"); TRACER(possibleChargeStates, READ, HEAP, "possible spectrum charge states");
             // for monoisotopic precursors, create a hypothesis for each adjustment and possible charge state
             IntegerSet::const_iterator itr = g_rtConfig->MonoisotopeAdjustmentSet.begin();
             for (; itr != g_rtConfig->MonoisotopeAdjustmentSet.end(); ++itr)
                 BOOST_FOREACH(int charge, possibleChargeStates)
-                {
+                {	TRACER_OP_START("Generate monoisotopic precursor hypothesis"); int adj=*itr; TRACER(adj, READ, STACK, "monoisotope adjustment"); TRACER(charge, READ, STACK, "spectrum charge");
                     PrecursorMassHypothesis p;
-                    p.mass = Ion::neutralMass(mzOfPrecursor, charge, 0, *itr);
-                    p.massType = MassType_Monoisotopic;
+                    p.mass = Ion::neutralMass(mzOfPrecursor, charge, 0, *itr); TRACER(p.mass, WRITE, STACK, "mass shift"); 
+                    p.massType = MassType_Monoisotopic; TRACER(p.massType, WRITE, STACK, "mass type - monoisotopic");
                     p.charge = charge;
-                    precursorMassHypotheses.push_back(p);
-                }
-        }
+                    precursorMassHypotheses.push_back(p); TRACER_OP_END("Generate monoisotopic precursor hypothesis");
+                } 
+        TRACER_OP_END("Generate monoisotopic precursor hypotheses");}
         else
-        {
+        { TRACER_OP_START("Generate average precursor hypotheses"); TRACER(possibleChargeStates, READ, HEAP, "possible spectrum charge states");
             // for average precursors, create a hypothesis for each possible charge state
             BOOST_FOREACH(int charge, possibleChargeStates)
-            {
-                PrecursorMassHypothesis p;
-                p.mass = Ion::neutralMass(mzOfPrecursor, charge);
-                p.massType = MassType_Average;
+            { TRACER_OP_START("Generate average precursor hypothesis");
+                PrecursorMassHypothesis p; TRACER(charge, READ, STACK, "spectrum charge");
+                p.mass = Ion::neutralMass(mzOfPrecursor, charge); TRACER(p.mass, WRITE, STACK, "mass shift"); 
+                p.massType = MassType_Average; TRACER(p.massType, WRITE, STACK, "mass type - average");
                 p.charge = charge;
                 precursorMassHypotheses.push_back(p);
-            }
-        }
+            TRACER_OP_END("Generate average precursor hypothesis"); }
+        TRACER_OP_END("Generate average precursor hypotheses"); }
 
         // sort hypotheses ascending by mass
         sort(precursorMassHypotheses.begin(), precursorMassHypotheses.end());
-
+		BOOST_FOREACH(PrecursorMassHypothesis h, precursorMassHypotheses) { TRACER(h, WRITE, HEAP, "Precursor mass hypothesis"); }
         //PeakPreData unfilteredPeakPreData = peakPreData;
-
+		TRACER_OP_START("Filter out peaks above the largest precursor hypothesis mass"); TRACER(peakPreData, READ, HEAP, "Preprocessed peak data"); TRACER(precursorMassHypotheses.back().mass, READ, HEAP, "Maximum precursor mass hypothesis"); TRACER(g_rtConfig->AvgPrecursorMzTolerance, READ, HEAP, "Average precursor m/z tolerance");
         // filter out peaks above the largest precursor hypthesis' mass
         peakPreData.erase( peakPreData.upper_bound( precursorMassHypotheses.back().mass + g_rtConfig->AvgPrecursorMzTolerance ), peakPreData.end() );
-
+		TRACER(peakPreData, WRITE, HEAP, "Preprocessed peak data without peaks over max precursor mass"); TRACER_OP_END("Filter out peaks above the largest precursor hypothesis mass"); 
 		// The old way of calculating these values:
         /*mzLowerBound = peakPreData.begin()->first;
 		mzUpperBound = peakPreData.rbegin()->first;
