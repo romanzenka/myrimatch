@@ -10,7 +10,7 @@ $first = isset($_GET['first']) ? intval($_GET['first']) : -1;
 $last = isset($_GET['last']) ? intval($_GET['last']) : -1;
 $code = isset($_GET['code']) ? $_GET['code'] : '';
 
-$myrimatch_root = '..';
+$myrimatch_root = 'myrimatch';
 
 ?>
 	<title>Myrimatch source: <?php echo("$file ($line)"); ?></title>
@@ -54,10 +54,11 @@ foreach ($f as $linenum => $text) {
 		echo("<pre class=\"brush: cpp; highlight: [$line], first-line: $l, tab-size: 8, smart-tabs: false\">\n");
 		$in_section = 1;
 	}
+    # Add little pointers around variables (not sure how to do background highlight
     $unicodeChar = '\u261b'; $rightArrow = json_decode('"'.$unicodeChar.'"');
     $unicodeChar = '\u261a'; $leftArrow = json_decode('"'.$unicodeChar.'"');
     if($code != '') {
-        $text = str_replace($code, $rightArrow . $code . $leftArrow, $text);
+        $text = preg_replace('/\b\Q' . $code . '\E\b/', $rightArrow . $code . $leftArrow, $text);
     }
 	echo('&#8203;'.htmlspecialchars($text));
 }
