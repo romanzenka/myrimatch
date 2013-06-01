@@ -457,7 +457,7 @@ namespace freicore
 
 		// Filters out the peaks with the lowest intensities until only <ticCutoffPercentage> of the total ion current remains
 		void FilterByTIC( double ticCutoffPercentage )
-		{
+		{ TRACER_METHOD_START("PeakSpectrum::FilterByTIC"); TRACER(peakPreData, READ, HEAP, "preprocessed peak data");
 			//cout << "TicCutoffPercentage:" << ticCutoffPercentage << endl;
 			//exit(1);
 			if( !peakPreData.empty() )
@@ -472,7 +472,7 @@ namespace freicore
 					totalIonCurrent += itr->second;
 					IntenSortedPeakPreData::iterator iItr = intenSortedPeakPreData.insert( make_pair( itr->second, itr->second ) );
 					iItr->second = itr->first;
-				}
+				} TRACER(totalIonCurrent, WRITE, STACK, "Total ion current for this spectrum"); TRACER(ticCutoffPercentage, READ, STACK, "TIC cutoff percentage");
 
 				double relativeIntensity = 0.0f;
 				IntenSortedPeakPreData::reverse_iterator r_iItr;
@@ -495,12 +495,12 @@ namespace freicore
 				{
 					PeakPreData::iterator itr = peakPreData.insert( make_pair( iItr->second, iItr->second ) ).first;
 					itr->second = iItr->first;
-				}
-			}
-		}
+				} 
+			} TRACER(peakPreData, WRITE, HEAP, "TIC-filtered list of preprocessed peaks");
+		TRACER_METHOD_END("PeakSpectrum::FilterByTIC"); }
 
 		void FilterByPeakCount( size_t maxPeakCount )
-		{
+		{ TRACER_METHOD_BEGIN("PeakSpectrum::FilterByPeakCount"); TRACER(maxPeakCount, READ, STACK, "Maximum peak count");
 			if( !peakPreData.empty() )
 			{
 				// Sort peak list in descending order of intensity
@@ -512,7 +512,7 @@ namespace freicore
 					IntenSortedPeakPreData::iterator iItr = intenSortedPeakPreData.insert( make_pair( itr->second, itr->second ) );
 					iItr->second = itr->first;
 				}
-
+				TRACER(peakPreData, READ, HEAP, "List of preprocessed peaks");
 				peakPreData.clear();
 
 				size_t peakCount = 0;
@@ -523,8 +523,8 @@ namespace freicore
 					PeakPreData::iterator itr = peakPreData.insert( PeakPreData::value_type( r_iItr->second, r_iItr->second ) ).first;
 					itr->second = r_iItr->first;
 				}
-			}
-		}
+			} TRACER(peakPreData, WRITE, HEAP, "Count-filtered list of preprocessed peaks");
+		TRACER_METHOD_END("PeakSpectrum::FilterByPeakCount"); }
 
 		void DetermineSpectrumChargeState()
 		{
