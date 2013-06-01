@@ -129,20 +129,20 @@ namespace myrimatch
 
     private:
         void finalize()
-        { TRACER_OP_START("config finalize"); TRACER_LABEL(*this, "Myrimatch RunTimeConfig");
+        { TRACER_BI; TRACER_OP_START("RunTimeConfig::finalize"); TRACER_P(*this, "RunTimeConfig", "", READ, HEAP, "Full config of Myrimatch"); TRACER(OutputFormat, READ, HEAP, "Output format parameter");
             if (bal::iequals(OutputFormat, "pepXML"))
                 outputFormat = pwiz::identdata::IdentDataFile::Format_pepXML;
             else if (bal::iequals(OutputFormat, "mzIdentML"))
                 outputFormat = pwiz::identdata::IdentDataFile::Format_MzIdentML;
             else
                 m_warnings << "Invalid value \"" << OutputFormat << "\" for OutputFormat\n";
-			TRACER_OP_OUT_DUMP(outputFormat);
-            decoyPrefix = DecoyPrefix.empty() ? "rev_" : DecoyPrefix; TRACER_OP_OUT_DUMP(decoyPrefix);
-            automaticDecoys = DecoyPrefix.empty() ? false : true; TRACER_OP_OUT_DUMP(automaticDecoys);
+			TRACER_P(outputFormat, "pwiz::identdata::IdentDataFile::Format", lexical_cast<string>(outputFormat), WRITE, HEAP, "File format to be produced");
+            decoyPrefix = DecoyPrefix.empty() ? "rev_" : DecoyPrefix; TRACER(DecoyPrefix, READ, HEAP, "Prefix string for decoy sequences"); TRACER(decoyPrefix, WRITE, HEAP, "Prefix for decoy sequences");
+            automaticDecoys = DecoyPrefix.empty() ? false : true; TRACER(automaticDecoys, WRITE, HEAP, "Automatically determine decoy prefixes");
 
             if (MonoisotopeAdjustmentSet.empty())
                 MonoisotopeAdjustmentSet.insert(0);
-			TRACER_OP_OUT_DUMP(MonoisotopeAdjustmentSet);
+			TRACER(MonoisotopeAdjustmentSet, NOTE, HEAP, "What alternative monoisotopic peaks we should try to match");
             // TODO: move CleavageRules parsing to its own class
             trim(CleavageRules); // trim flanking whitespace
 
@@ -203,13 +203,13 @@ namespace myrimatch
                     CleavageRulesStream >> tmpRuleSet;
                     cleavageAgentRegex = boost::regex(tmpRuleSet.asCleavageAgentRegex());
                 }
-            } TRACER_OP_OUT_DUMP(cleavageAgentRegex);
-
-            MaxMissedCleavages = MaxMissedCleavages < 0 ? 100000 : MaxMissedCleavages; TRACER_OP_OUT_DUMP(MaxMissedCleavages);
+            } TRACER(cleavageAgentRegex, WRITE, HEAP, "Regular expression marking places where the enzyme cleaves");
+			TRACER_OP_START("Clean up MaxMissedCleavages"); TRACER(MaxMissedCleavages, READ, HEAP, "Previous number of missed cleavages");
+            MaxMissedCleavages = MaxMissedCleavages < 0 ? 100000 : MaxMissedCleavages; TRACER(MaxMissedCleavages, WRITE, HEAP, "Cleaned up maximum missed cleavages"); TRACER_OP_END("Clean up MaxMissedCleavages"); 
 
             // TODO: move fragmentation rule parsing to its own class
-            vector<string> fragmentationRuleTokens;
-            split( fragmentationRuleTokens, FragmentationRule, is_any_of(":") );
+            vector<string> fragmentationRuleTokens; TRACER_OP_START("Parse fragmentation rule"); TRACER(FragmentationRule, READ, HEAP, "Command line fragmentation rule");
+            split( fragmentationRuleTokens, FragmentationRule, is_any_of(":") ); TRACER(fragmentationRuleTokens, WRITE, STACK, "Fragmentation rules split by ':'");
             if( fragmentationRuleTokens.empty() )
                 m_warnings << "Blank value for FragmentationRule is invalid.\n";
             else
@@ -257,16 +257,16 @@ namespace myrimatch
                     }
                 } else
                     m_warnings << "Invalid mode \"" << mode << "\" for FragmentationRule.\n";
-            } TRACER_OP_OUT_DUMP_R(defaultFragmentTypes, "freicore::FragmentTypesBitset", (defaultFragmentTypes[FragmentType_A]?string(" a"):string())+(defaultFragmentTypes[FragmentType_B]?string(" b"):string())+(defaultFragmentTypes[FragmentType_C]?string(" c"):string())+(defaultFragmentTypes[FragmentType_X]?string(" x"):string())+(defaultFragmentTypes[FragmentType_Y]?string(" y"):string())+(defaultFragmentTypes[FragmentType_Z]?string(" z"):string())+(defaultFragmentTypes[FragmentType_Z_Radical]?string(" z*"):string()));
-			TRACER_OP_OUT_DUMP(EstimateSearchTimeOnly);
+            } TRACER_P(defaultFragmentTypes, "freicore::FragmentTypesBitset", (defaultFragmentTypes[FragmentType_A]?string(" a"):string())+(defaultFragmentTypes[FragmentType_B]?string(" b"):string())+(defaultFragmentTypes[FragmentType_C]?string(" c"):string())+(defaultFragmentTypes[FragmentType_X]?string(" x"):string())+(defaultFragmentTypes[FragmentType_Y]?string(" y"):string())+(defaultFragmentTypes[FragmentType_Z]?string(" z"):string())+(defaultFragmentTypes[FragmentType_Z_Radical]?string(" z*"):string()), WRITE, HEAP, "Supported fragment types"); TRACER_OP_END("Parse fragmentation rule");
+			TRACER(EstimateSearchTimeOnly, READ, HEAP, "Only estimate search time");
             if( ProteinSamplingTime == 0 )
             {
                 if( EstimateSearchTimeOnly )
                     m_warnings << "ProteinSamplingTime = 0 disables EstimateSearchTimeOnly.\n";
-                EstimateSearchTimeOnly = 0; TRACER_OP_OUT_DUMP(EstimateSearchTimeOnly); TRACER_REASON(EstimateSearchTimeOnly, "ProteinSamplingTime = 0 disables EstimateSearchTimeOnly");
-            } TRACER_OP_OUT_DUMP(ProteinSamplingTime);
-
-            // TODO: move mzToleranceRule to its own class
+                EstimateSearchTimeOnly = 0; TRACER(EstimateSearchTimeOnly, WRITE, HEAP, "ProteinSamplingTime = 0 disables EstimateSearchTimeOnly");
+            } TRACER(ProteinSamplingTime, READ, HEAP, "For how long to sample proteins to guess the total search time");
+			TRACER(PrecursorMzToleranceRule, READ, HEAP, "How to calculate precursor tolerances, coming from the command line");
+            // TODO: move mzToleranceRule to its own class 
             bal::to_lower(PrecursorMzToleranceRule);
             if( PrecursorMzToleranceRule == "auto" )
                 precursorMzToleranceRule = MzToleranceRule_Auto;
@@ -276,7 +276,7 @@ namespace myrimatch
                 precursorMzToleranceRule = MzToleranceRule_Avg;
             else
                 m_warnings << "Invalid mode \"" << PrecursorMzToleranceRule << "\" for PrecursorMzToleranceRule.\n";
-			TRACER_OP_OUT_DUMP(precursorMzToleranceRule);
+			TRACER_P(precursorMzToleranceRule, "freicore::myrimatch::MzToleranceRule", lexical_cast<string>(precursorMzToleranceRule), WRITE, HEAP, "Parsed precursor tolerance rule (0-auto, 1-monoisotopic mass, 2-average mass)");
             if (MonoisotopeAdjustmentSet.size() > 1 && (1000.0 + MonoPrecursorMzTolerance) - 1000.0 > 0.2)
                 m_warnings << "MonoisotopeAdjustmentSet should be set to 0 when the MonoPrecursorMzTolerance is wide.\n";
 
@@ -285,33 +285,33 @@ namespace myrimatch
             string cwd;
             cwd.resize( MAX_PATH );
             getcwd( &cwd[0], MAX_PATH );
-            WorkingDirectory = cwd.c_str(); TRACER_OP_OUT_DUMP(WorkingDirectory);
-
+            WorkingDirectory = cwd.c_str(); TRACER(WorkingDirectory, HEAP, WRITE, "Working directory");
+			TRACER_OP_START("Cleanup TicCutoffPercentage"); TRACER(TicCutoffPercentage, READ, HEAP, "Each peak should be above this percent of TIC to be counted");
 			if( TicCutoffPercentage > 1.0 )
             {
-                TicCutoffPercentage /= 100.0; TRACER_OP_OUT_DUMP(TicCutoffPercentage); TRACER_REASON(TicCutoffPercentage, "The value was > 1.0, was divided by 100");
+                TicCutoffPercentage /= 100.0; TRACER(TicCutoffPercentage, WRITE, HEAP, "The value was > 1.0, was divided by 100");
                 m_warnings << "TicCutoffPercentage must be between 0 and 1 (100%)\n";
-            }
+            } TRACER_OP_END("Cleanup TicCutoffPercentage"); 
 
-			TRACER_OP_START("parse dynamic mods"); TRACER_OP_IN_DUMP(DynamicMods);
+			TRACER_OP_START("parse dynamic mods"); TRACER(DynamicMods, READ, HEAP, "Command-line dynamic mods specification");
             if( !DynamicMods.empty() )
             {
                 try {dynamicMods = DynamicModSet( DynamicMods );}
                 catch (exception& e) {m_warnings << "Unable to parse DynamicMods \"" << DynamicMods << "\": " << e.what() << "\n";}
-            } TRACER_OP_OUT_DUMP_R(dynamicMods, "freicore::DynamicModSet", (string)dynamicMods); TRACER_OP_END("parse dynamic mods");
-			TRACER_OP_START("parse static mods"); TRACER_OP_IN_DUMP(StaticMods);
+            } TRACER_P(dynamicMods, "freicore::DynamicModSet", (string)dynamicMods, WRITE, HEAP, "Parsed set of dynamic mods"); TRACER_OP_END("parse dynamic mods");
+			TRACER_OP_START("parse static mods"); TRACER(StaticMods, READ, HEAP, "Command-line static mods specification");
             if( !StaticMods.empty() )
             {
                 try {staticMods = StaticModSet( StaticMods );}
                 catch (exception& e) {m_warnings << "Unable to parse StaticMods \"" << StaticMods << "\": " << e.what() << "\n";}
-            } TRACER_OP_OUT_DUMP_R(staticMods, "freicore::StaticModSet", (string)staticMods); TRACER_OP_END("parse static mods");
-            TRACER_OP_START("largest positive and negative mod mass"); TRACER_OP_INPUT(dynamicMods);
+            } TRACER_P(staticMods, "freicore::StaticModSet", (string)staticMods, WRITE, HEAP, "Parsed set of dynamic mods"); TRACER_OP_END("parse static mods");
+            TRACER_OP_START("largest positive and negative mod mass"); TRACER_REF(dynamicMods, READ, HEAP, "All the dynamic mods"); TRACER_REF(MaxDynamicMods, READ, HEAP, "Maximum number of dynamic mods");
             BOOST_FOREACH(const DynamicMod& mod, dynamicMods)
             {
                 largestPositiveDynamicModMass = max(largestPositiveDynamicModMass, mod.modMass * MaxDynamicMods);
                 largestNegativeDynamicModMass = min(largestNegativeDynamicModMass, mod.modMass * MaxDynamicMods);
-            } TRACER_OP_OUT_DUMP(largestPositiveDynamicModMass); TRACER_OP_OUT_DUMP(largestNegativeDynamicModMass); TRACER_OP_END("largest positive and negative mod mass");
-			TRACER_OP_START("determine number of intensity/mz fidelity class counts"); TRACER_OP_IN_DUMP(ClassSizeMultiplier);
+            } TRACER(largestPositiveDynamicModMass, WRITE, HEAP, "Largest positive mass shift arising from dynamic mods"); TRACER(largestNegativeDynamicModMass, WRITE, HEAP, "Largest negative mass shift arising from dynamic mods"); TRACER_OP_END("largest positive and negative mod mass");
+			TRACER_OP_START("determine number of intensity/mz fidelity class counts"); TRACER(ClassSizeMultiplier, READ, HEAP, "Each class is this multiplier times the size of previous class"); TRACER(NumIntensityClasses, READ, HEAP, "How many peak intensity classes"); TRACER(NumMzFidelityClasses, READ, HEAP, "How many classes for m/z fidelity calculation");
             if( ClassSizeMultiplier > 1 )
             {
                 minIntensityClassCount = int( ( pow( ClassSizeMultiplier, NumIntensityClasses ) - 1 ) / ( ClassSizeMultiplier - 1 ) );
@@ -320,48 +320,48 @@ namespace myrimatch
             {
                 minIntensityClassCount = NumIntensityClasses;
                 minMzFidelityClassCount = NumMzFidelityClasses;
-            } TRACER_OP_OUT_DUMP(minIntensityClassCount); TRACER_OP_OUT_DUMP(minMzFidelityClassCount); TRACER_OP_END("determine number of intensity/mz fidelity class counts");
+            } TRACER(minIntensityClassCount, WRITE, HEAP, "???"); TRACER(minMzFidelityClassCount, WRITE, HEAP, "???"); TRACER_OP_END("determine number of intensity/mz fidelity class counts");
             
-            maxChargeStateFromSpectra = 0;
+			maxChargeStateFromSpectra = 0; TRACER_OP_START("Determine maximum fragment charge state"); TRACER(MaxFragmentChargeState, READ, HEAP, "???"); TRACER(NumChargeStates, READ, HEAP, "???");
             maxFragmentChargeState = ( MaxFragmentChargeState > 0 ? MaxFragmentChargeState+1 : NumChargeStates );
-            
-            vector<double> insideProbs;
-            int numBins = 5;
+            TRACER(maxFragmentChargeState, WRITE, HEAP, "Either MaxFragmentChargeState or NumChargeStates..."); TRACER_OP_END("Determine maximum fragment charge state");
+			vector<double> insideProbs; TRACER_OP_START("Calculate mz fidelity log odds ratio vector");
+            int numBins = 5; TRACER(numBins, READ, STACK, "Number of bins is set to a constant");
             // Divide the fragment mass error into half and use it as standard deviation
-            double stdev = FragmentMzTolerance.value*0.5;
+            double stdev = FragmentMzTolerance.value*0.5; TRACER_OP_START("determine stdev"); TRACER_P(FragmentMzTolerance, "MZTolerance", TRACER_S2S(FragmentMzTolerance), READ, HEAP, "Fragment m/z tolerance"); TRACER(stdev, WRITE, STACK, "Standard deviation is 1/2 of FragmentMzTolerance"); TRACER_OP_END("determine stdev"); 
             massErrors.clear();
             insideProbs.clear();
             mzFidelityLods.clear();
             // Divide the mass error distributions into 10 bins.
             for(int j = 1; j <= numBins; ++j) 
-            {
+            { TRACER_OP_START("Calculate bin mass error and probability value"); TRACER_BI; TRACER(j, READ, STACK, "Bin number");
                 // Compute the mass error associated with each bin.
-                double massError = FragmentMzTolerance.value * ((double)j/(double)numBins);
+                double massError = FragmentMzTolerance.value * ((double)j/(double)numBins); TRACER(massError, WRITE, STACK, "mass error for the bin - increases linearly");
                 // Compute the cumulative distribution function of massError 
                 // with mu=0 and sig=stdev
-                double errX = (massError-0)/(stdev*sqrt(2.0));
-                double cdf = 0.5 * (1.0+pwiz::math::erf(errX));
+                double errX = (massError-0)/(stdev*sqrt(2.0)); 
+                double cdf = 0.5 * (1.0+pwiz::math::erf(errX)); TRACER(cdf, WRITE, STACK, "probability that the error is less than massError, given normal distribution with stdev"); 
                 // Compute the gaussian inside probability
-                double insideProb = 2.0*cdf-1.0;
+                double insideProb = 2.0*cdf-1.0; TRACER(insideProb, WRITE, STACK, "probability that an error lies within (-massError, massError)");
                 // Save the mass errors and inside probabilities
                 massErrors.push_back(massError);
-                insideProbs.push_back(insideProb);
-            }
+                insideProbs.push_back(insideProb); TRACER_BO; TRACER_OP_END("Calculate bin mass error and probability value");
+            } TRACER(massErrors, WRITE, HEAP, "Mass error vector"); TRACER(insideProbs, WRITE, HEAP, "Probability that the error is at least as big for the massError vector");
             // mzFidelity bin probablities are dependent on the number of bin. So,
             // compute the probabilities only once.
             // Compute the probability associated with each mass error bin
-            double denom = insideProbs.back();
+            double denom = insideProbs.back(); TRACER_BI; TRACER(denom, WRITE, STACK, "The probability of the biggest bin, should be close to 1.0");
             for(int j = 0; j < numBins; ++j) 
-            {
+            { TRACER_OP_START("Calculate mz fidelity log odds ratio for bin"); TRACER_BI; TRACER(j, READ, STACK, "Bin number");
                 double prob;
                 if(j==0) {
                     prob = insideProbs[j]/denom;
                 } else {
                     prob = (insideProbs[j]-insideProbs[j-1])/denom;
-                }
+                } TRACER(prob, WRITE, STACK, "Probability that the value lies exactly in the particular bin");
                 // Compute the log odds ratio of GaussianProb to Uniform probability and save it
-                mzFidelityLods.push_back(log(prob*(double)numBins));
-            }
+                mzFidelityLods.push_back(log(prob*(double)numBins)); TRACER(mzFidelityLods.back(), WRITE, HEAP, "log(prob of the bin * numBins)"); TRACER_OP_END("Calculate mz fidelity log odds ratio for bin"); TRACER_BO;
+            } TRACER(mzFidelityLods, WRITE, HEAP, "Calculated mz fidelity log odds ratios"); TRACER_OP_END("Calculate mz fidelity log odds ratio vector");
             /*cout << "Error-Probs:" << endl;
             for(int j = 0; j < numBins; ++j) 
             {
@@ -370,7 +370,7 @@ namespace myrimatch
             cout << endl;*/
             //exit(1);
 
-            BaseRunTimeConfig::finalize(); TRACER_OP_END("config finalize");
+            BaseRunTimeConfig::finalize(); TRACER_BO; TRACER_OP_END("RunTimeConfig::finalize"); TRACER_BO;
         }
     };
 

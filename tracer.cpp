@@ -1,135 +1,183 @@
 #include "tracer.hpp"
+#include "stdafx.h"
 
 #ifdef TRACER
 
-void tracer_hdr(const char * op) {
-	cout << "[TRACER]\t" << op << "\t";
+#include "myrimatchSpectrum.h"
+
+void esc(const char *s) {
+	const char *ptr = s;
+	while(*ptr) {
+		if(*ptr == '\n') {
+			cout << "\\n";
+		} else if(*ptr == '\r') {
+			cout << "\\r";
+		} else if(*ptr == '\t') {
+			cout << "\\t";
+		} else if(*ptr == '\\') {
+			cout << "\\\\";
+		} else {
+			cout << *ptr;
+		}
+		ptr++;
+	}
 }
 
-void tracer_ftr() {
-	cout << "\n";
+// Escape for strings where tab is meaningful (separates elements in array). Escape the tab as <tab>
+void esc_tab(const char *s) {
+	const char *ptr = s;
+	while(*ptr) {
+		if(*ptr == '\n') {
+			cout << "\\n";
+		} else if(*ptr == '\r') {
+			cout << "\\r";
+		} else if(*ptr == '\t') {
+			cout << "<tab>";
+		} else if(*ptr == '\\') {
+			cout << "\\\\";
+		} else {
+			cout << *ptr;
+		}
+		ptr++;
+	}
 }
 
-void tracer_hdr(const char * op, const void * obj) {
-	tracer_hdr(op);
-	cout << obj << "\t";
+void tracer_dump(const string *x) {
+	cout << x << '\t' << "std::string" << '\t'; esc(x->c_str());
 }
 
-void tracer_label(const void *x, const char* name) {
-	tracer_hdr("label", x);
-	cout << name;
-	tracer_ftr();
+void tracer_dump(const vector<string> *x) {
+	cout << x << '\t' << "std::vector<string>" << '\t';
+	bool tab = false;
+	BOOST_FOREACH(string s, *x) {
+		if(tab) {
+			cout <<  "\\t";
+		}
+		tab = true;
+		esc_tab(s.c_str());
+	}
 }
 
-void tracer_var(const void *x, const char* name, const char *file, int linenum) {
-	tracer_hdr("var", x);
-	cout << name << "\t" << file << "\t" << linenum;
-	tracer_ftr();
+void tracer_dump(const map<string, string> *x) {
+	cout << x << '\t' << "std::map<string, string>" << '\t';
+	std::pair<string, string> p;
+	bool tab = false;
+	BOOST_FOREACH(p, *x) {
+		if(tab) {
+			cout << "\\t";
+		}
+		tab = true;
+		esc_tab(p.first.c_str());
+		cout << " ==> ";
+		esc_tab(p.second.c_str());
+	}
 }
 
-void tracer_unlink(const void *x) {
-	tracer_hdr("unlink", x);
-	tracer_ftr();
+void tracer_dump(const vector<double> *x) {
+	cout << x << '\t' << "std::vector<double>" << '\t';
+	bool tab = false;
+	BOOST_FOREACH(double v, *x) {
+		if(tab) {
+			cout <<  "\\t";
+		}
+		tab = true;
+		cout << v;
+	}
 }
 
-void tracer_start(const void *x) {
-	tracer_hdr("start", x);
-	tracer_ftr();
+void tracer_dump(const vector<float> *x) {
+	cout << x << '\t' << "std::vector<float>" << '\t';
+	bool tab = false;
+	BOOST_FOREACH(float v, *x) {
+		if(tab) {
+			cout <<  "\\t";
+		}
+		tab = true;
+		cout << v;
+	}
 }
 
-void tracer_dump_hdr(const void *object, const char* type) {
-	tracer_hdr("dump", object);
-	cout << type << "\t";
+void tracer_dump(const int *x) {
+	cout << x << '\t' << "int" << '\t' << *x;
 }
 
-void tracer_dump(const string& x) {
-	tracer_dump_hdr(&x, "std::string");
-	cout << x;
-	tracer_ftr();
+void tracer_dump(const float *x) {
+	cout << x << '\t' << "float" << '\t' << *x;
 }
 
-void tracer_dump(const vector<string>& x) {
-	tracer_dump_hdr(&x, "std::vector<std::string>");
-	cout << x;
-	tracer_ftr();
+void tracer_dump(const double *x) {
+	cout << x << '\t' << "double" << '\t' << *x;
 }
 
-void tracer_dump(const int &x) {
-	tracer_dump_hdr(&x, "int");
-	cout << x;
-	tracer_ftr();
+void tracer_dump(const char *x) {
+	cout << x << '\t' << "char" << '\t' << *x;
 }
 
-void tracer_dump(const float &x) {
-	tracer_dump_hdr(&x, "float");
-	cout << x;
-	tracer_ftr();
+void tracer_dump(const bool *x) {
+	cout << x << '\t' << "bool" << '\t' << (*x ?  "true" : "false");
 }
 
-void tracer_dump(const double &x) {
-	tracer_dump_hdr(&x, "double");
-	cout << x;
-	tracer_ftr();
+void tracer_dump(const IntegerSet *x) {
+	cout << x << '\t' << "IntegerSet" << '\t' << *x;
 }
 
-void tracer_dump(const char &x) {
-	tracer_dump_hdr(&x, "char");
-	cout << x;
-	tracer_ftr();
+void tracer_dump(const boost::regex *x) {
+	cout << x << '\t' << "boost::regex" << '\t' << *x;
 }
 
-void tracer_dump(const IntegerSet &x) {
-	tracer_dump_hdr(&x, "IntegerSet");
-	cout << x;
-	tracer_ftr();
+void tracer_dump(const freicore::PeakPreData *x) {
+	cout << x << '\t' << "freicore::PeakPreData" << '\t';
+	std::pair<double, float> p;
+	bool tab = false;
+	BOOST_FOREACH(p, *x) {
+		if(tab) {
+			cout << "\\t";
+		}
+		tab = true;
+        cout << p.first << ", " << p.second;
+	}
 }
 
-void tracer_dump(const boost::regex &x) {
-	tracer_dump_hdr(&x, "boost::regex");
-	cout << x;
-	tracer_ftr();
+void tracer_dump(const freicore::myrimatch::SpectraList *x) {
+	cout << x << '\t' << "freicore::myrimatch::SpectraList" << '\t' << "List of " << x->size() << " spectra";
 }
 
-void tracer_dump(const void *x, const char *type, const char * representation) {
-	tracer_dump_hdr(x, type);
-	cout << representation;
-	tracer_ftr();
+void tracer_dump(const freicore::myrimatch::Spectrum *x) {
+    cout << x << '\t' << "freicore::myrimatch::Spectrum" << '\t';
+    esc(x->nativeID.c_str());
 }
 
-void tracer_dump(const void *x, const char * type, const string &representation) {
-	tracer_dump_hdr(x, type);
-	cout << representation;
-	tracer_ftr();
+void tracer_dump(const freicore::BaseSpectrum *x) {
+    cout << x << '\t' << "freicore::BaseSpectrum" << '\t';
+    esc(x->nativeID.c_str());
 }
 
-void tracer_reason(const void *x, const char * reason) {
-	tracer_hdr("reason", x);
-	cout << reason;
-	tracer_ftr();
+void tracer_dump(const boost::container::flat_map<double, freicore::myrimatch::PeakInfo> *x) {
+    cout << x << '\t' << "freicore::myrimatch::Spectrum::PeakData" << '\t';
+    bool tab = false;
+    for (boost::container::flat_map<double, freicore::myrimatch::PeakInfo>::const_iterator itr = x->begin(); itr != x->end(); ++itr)
+    {
+        double mz = itr->first;
+        float normalizedIntensity = itr->second.normalizedIntensity;
+        if(tab) {
+            cout << "\\t";
+        }
+        tab = true;
+        cout << mz << ", " << normalizedIntensity;
+    }
 }
 
-void tracer_op_start(const char *name, const char *file, int linenum) {
-	tracer_hdr("op_start");
-	cout << name << "\t" << file << "\t" << linenum;
-	tracer_ftr();
+
+const char * tracer_id(const freicore::BaseSpectrum *x) {
+    return x->nativeID.c_str();
 }
 
-void tracer_op_input(const void *x) {
-	tracer_hdr("op_in");
-	cout << x;
-	tracer_ftr();
+const char * tracer_id(const freicore::myrimatch::Spectrum *x) {
+    return x->nativeID.c_str();
 }
 
-void tracer_op_output(const void *x) {
-	tracer_hdr("op_out");
-	cout << x;
-	tracer_ftr();
-}
-
-void tracer_op_end(const char *name, const char *file, int linenum) {
-	tracer_hdr("op_end");
-	cout << name << "\t" << file << "\t" << linenum;
-	tracer_ftr();
+const char * tracer_id(void *ptr) { 
+    return "this*"; 
 }
 
 

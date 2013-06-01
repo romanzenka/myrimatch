@@ -19,8 +19,8 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. 
 // See the License for the specific language governing permissions and 
 // limitations under the License.
-//
-
+//  # ROMAN ZENKA - tracing support
+#include "../../../../../tracer.hpp"
 #ifndef PWIZ_API_DECL
 #ifdef PWIZ_DYN_LINK
 #ifdef PWIZ_SOURCE
