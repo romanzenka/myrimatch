@@ -75,8 +75,8 @@ const char * tracer_id(void *ptr);
 
 #define TRACER_S2S(variable) lexical_cast<string>(variable)
 // Defines scope of stack variables
-#define TRACER_BI { cout << "[TRACER]" << '\t' << "block_in" << '\n'; } {
-#define TRACER_BO { cout << "[TRACER]" << '\t' << "block_out" << '\n'; } }
+#define TRACER_BI { cout << "[TRACER]" << '\t' << "block_in" << '\n'; }
+#define TRACER_BO { cout << "[TRACER]" << '\t' << "block_out" << '\n'; }
 
 #else // !TRACER_ENABLED
 
