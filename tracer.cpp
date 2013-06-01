@@ -139,7 +139,46 @@ void tracer_dump(const freicore::PeakPreData *x) {
 }
 
 void tracer_dump(const freicore::myrimatch::SpectraList *x) {
-	cout << x << '\t' << "SpectraList" << '\t' << "List of " << x->size() << " spectra";
+	cout << x << '\t' << "freicore::myrimatch::SpectraList" << '\t' << "List of " << x->size() << " spectra";
 }
+
+void tracer_dump(const freicore::myrimatch::Spectrum *x) {
+    cout << x << '\t' << "freicore::myrimatch::Spectrum" << '\t';
+    esc(x->nativeID.c_str());
+}
+
+void tracer_dump(const freicore::BaseSpectrum *x) {
+    cout << x << '\t' << "freicore::BaseSpectrum" << '\t';
+    esc(x->nativeID.c_str());
+}
+
+void tracer_dump(const boost::container::flat_map<double, freicore::myrimatch::PeakInfo> *x) {
+    cout << x << '\t' << "freicore::myrimatch::Spectrum::PeakData" << '\t';
+    bool tab = false;
+    for (boost::container::flat_map<double, freicore::myrimatch::PeakInfo>::const_iterator itr = x->begin(); itr != x->end(); ++itr)
+    {
+        double mz = itr->first;
+        float normalizedIntensity = itr->second.normalizedIntensity;
+        if(tab) {
+            cout << "\\t";
+        }
+        tab = true;
+        cout << mz << ", " << normalizedIntensity;
+    }
+}
+
+
+const char * tracer_id(const freicore::BaseSpectrum *x) {
+    return x->nativeID.c_str();
+}
+
+const char * tracer_id(const freicore::myrimatch::Spectrum *x) {
+    return x->nativeID.c_str();
+}
+
+const char * tracer_id(void *ptr) { 
+    return "this*"; 
+}
+
 
 #endif // TRACER

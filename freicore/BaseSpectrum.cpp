@@ -36,7 +36,7 @@ namespace freicore
 	{}
 
 	BaseSpectrum::BaseSpectrum( const BaseSpectrum& old )
-	{
+	{ TRACER_METHOD_START("BaseSpectrum::copy constructor");
 		id					    = old.id;
         nativeID                = old.nativeID;
         fileName				= old.fileName;
@@ -53,7 +53,7 @@ namespace freicore
 		mzLowerBound			= old.mzLowerBound;
 		totalIonCurrent			= old.totalIonCurrent;
 		totalPeakSpace			= old.totalPeakSpace;
-	}
+	TRACER_METHOD_END("BaseSpectrum::copy constructor");}
 
 	BaseSpectrum::~BaseSpectrum()
 	{}

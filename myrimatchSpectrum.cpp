@@ -40,7 +40,7 @@ namespace freicore
 namespace myrimatch
 {
 	void Spectrum::Preprocess()
-	{
+	{   TRACER_METHOD_START("Spectrum::Preprocess");
 		PeakPreData::iterator itr;
 		PeakPreData::reverse_iterator r_itr;
 
@@ -178,10 +178,10 @@ namespace myrimatch
 
         if( fragmentTypes.none() )
             fragmentTypes = g_rtConfig->defaultFragmentTypes;
-	}
+	TRACER_METHOD_END("Spectrum::Preprocess");}
 
     void Spectrum::ClassifyPeakIntensities()
-	{
+	{ TRACER_METHOD_START("Spectrum::ClassifyPeakIntensities");
 		// Sort peaks by intensity.
 		// Use multimap because multiple peaks can have the same intensity.
 		typedef multimap< double, double > IntenSortedPeakPreData;
@@ -211,7 +211,7 @@ namespace myrimatch
 			}
 		}
 		intenSortedPeakPreData.clear();
-	}
+	TRACER_METHOD_END("Spectrum::ClassifyPeakIntensities");}
 
     // the m/z width for xcorr bins
     const double binWidth = Proton;
@@ -222,7 +222,7 @@ namespace myrimatch
        Ideally, this function has to be called prior to spectrum filtering.             
     */
     void Spectrum::NormalizePeakIntensities()
-    { TRACER_OP_START("Spectrum::NormalizePeakIntensities"); TRACER_BI; TRACER(precursorMassHypotheses.back().mass, READ, HEAP, "maximum mass from the precursor mass hypotheses for this spectrum");
+    { TRACER_METHOD_START("Spectrum::NormalizePeakIntensities"); TRACER_BI; TRACER(precursorMassHypotheses.back().mass, READ, HEAP, "maximum mass from the precursor mass hypotheses for this spectrum");
         // Get the number of bins and bin width for the processed peak array
         double massCutOff = precursorMassHypotheses.back().mass + 50; TRACER(massCutOff, WRITE, STACK, "mass cutoff"); 
         TRACER(binWidth, READ, HEAP, "Bin width - 1 proton mass");
@@ -259,16 +259,16 @@ namespace myrimatch
             int normalizationIndex = mzBin / regionSelector; TRACER(regionSelector, READ, STACK, "region size"); TRACER(normalizationIndex, WRITE, STACK, "peak region"); TRACER_OP_END("determine peak region"); TRACER(normalizationIndex, READ, STACK, "peak region");
             if( IS_VALID_INDEX( normalizationIndex,numberOfRegions ) ) /* ROMAN */ { TRACER(itr->second, READ, HEAP, "sqrt peak intensity"); TRACER(basePeakIntensityByRegion[normalizationIndex], READ, STACK, "max intensity for region"); 
                 peakData[itr->first].normalizedIntensity = (itr->second / basePeakIntensityByRegion[normalizationIndex]) * 50; TRACER(peakData[itr->first].normalizedIntensity, WRITE, HEAP, "normalized peak intensity"); } else { TRACER(peakData[itr->first].normalizedIntensity, READ, HEAP, "Unchanged normalized intensity"); }
-        TRACER_OP_END("Normalize peak 0-50"); } TRACER_BO; TRACER_OP_END("Normalize peaks 0-50"); TRACER_OP_END("Spectrum::NormalizePeakIntensities");
+        TRACER_OP_END("Normalize peak 0-50"); } TRACER_BO; TRACER_OP_END("Normalize peaks 0-50"); TRACER(peakData, WRITE, HEAP, "Normalized peaks"); TRACER_METHOD_END("Spectrum::NormalizePeakIntensities");
     }
 
     // Assign an intensity of 50 to fragment ions. 
     // Assign an intensity of 25 to bins neighboring the fragment ions.
     // Assign an intensity of 10 to neutral losses.
     void addXCorrFragmentIon(vector<float>& theoreticalSpectrum, double fragmentMass, int fragmentCharge, FragmentTypes fragmentType)
-    {
+    { TRACER_BI; TRACER_OP_START("addXCorrFragmentIon"); TRACER(theoreticalSpectrum, READ, HEAP, "theoretical spectrum"); TRACER(fragmentMass, READ, STACK, "fragment mass"); TRACER(fragmentCharge, READ, STACK, "fragment charge"); TRACER_P(fragmentType, "FragmentTypes", lexical_cast<string>(fragmentType), READ, STACK, "fragment type");
         int peakDataLength = theoreticalSpectrum.size();
-        int mzBin = round(fragmentMass / binWidth);
+        int mzBin = round(fragmentMass / binWidth); TRACER(mzBin, WRITE, STACK, "peak bin");
         if( IS_VALID_INDEX( mzBin, peakDataLength ) )
         {
             theoreticalSpectrum[mzBin] = 50;
@@ -282,22 +282,22 @@ namespace myrimatch
             // Neutral loss peaks
             if(fragmentType == FragmentType_B || fragmentType == FragmentType_Y)
             {
-                int NH3LossIndex = round( (fragmentMass - (AMMONIA_MONO / fragmentCharge)) / binWidth );
+                int NH3LossIndex = round( (fragmentMass - (AMMONIA_MONO / fragmentCharge)) / binWidth ); TRACER(NH3LossIndex, WRITE, STACK, "ammonia loss bin");
                 if( IS_VALID_INDEX( NH3LossIndex, peakDataLength ) )
                     theoreticalSpectrum[NH3LossIndex] = 10;
             }
 
             if(fragmentType == FragmentType_B)
             {
-                int H20LossIndex = round( (fragmentMass - (WATER_MONO / fragmentCharge)) / binWidth );
+                int H20LossIndex = round( (fragmentMass - (WATER_MONO / fragmentCharge)) / binWidth ); TRACER(H20LossIndex, WRITE, STACK, "water loss bin");
                 if ( IS_VALID_INDEX( H20LossIndex, peakDataLength ) )
                     theoreticalSpectrum[H20LossIndex] = 10;
             }
-        }
-    }
+        } TRACER(theoreticalSpectrum, WRITE, HEAP, "theoretical spectrum");
+    TRACER_OP_END("addXCorrFragmentIon"); TRACER_BO;}
 
     void Spectrum::ComputeXCorrs()
-    {
+    { TRACER_METHOD_START("Spectrum::ComputeXCorrs"); 
         BOOST_FOREACH(int chargeHypothesis, possibleChargeStates)
         {
             // Get the number of bins and bin width for the processed peak array
@@ -346,11 +346,11 @@ namespace myrimatch
             // first=rank, second=vector of tied results
             BOOST_FOREACH(RankMap::value_type& rank, resultsByRank)
             BOOST_FOREACH(const SearchResultSetType::SearchResultPtr& resultPtr, rank.second)
-            {
+            { TRACER_BI;
                 const SearchResult& result = *resultPtr;
 
                 // Get the expected width of the array
-                vector<float> theoreticalSpectrum(peakDataLength, 0);
+                vector<float> theoreticalSpectrum(peakDataLength, 0); TRACER(theoreticalSpectrum, WRITE, STACK, "theoretical spectrum (binned)");
 
                 size_t seqLength = result.sequence().length();
 
@@ -391,12 +391,12 @@ namespace myrimatch
                 for(int index = 0; index < peakDataLength; ++index)
                     rawXCorr += peakDataForXCorr[index] * theoreticalSpectrum[index];
                 (const_cast<Spectrum::SearchResultType&>(result)).XCorr = (rawXCorr / 1e4);
-            }
+            TRACER_BO; }
         }
-    }
+    TRACER_METHOD_END("Spectrum::ComputeXCorrs");}
 
     void Spectrum::computeSecondaryScores()
-    {
+    { TRACER_METHOD_START("Spectrum::computeSecondaryScores");
 		//Compute the average and the mode of the MVH and mzFidelity distrubutions
 		double averageMVHValue = 0.0;
 		double totalComps = 0.0;
@@ -543,10 +543,10 @@ namespace myrimatch
 				const_cast< SearchResult& >( *rItr ).deltaMZFidelitySeqType = (rItr->mzFidelity-reverIter->mzFidelity);
 			}
 		}*/
-	}
+	TRACER_METHOD_END("Spectrum::computeSecondaryScores");}
 
     void Spectrum::ScoreSequenceVsSpectrum( SearchResult& result, const string& seq, const vector< double >& seqIons )
-    {
+    { TRACER_METHOD_START("Spectrum::ScoreSequenceVsSpectrum");
         PeakData::iterator peakItr;
 		MvIntKey mzFidelityKey;
         //MvIntKey& mvhKey = result.key;
@@ -663,6 +663,6 @@ namespace myrimatch
 		}
 
 		STOP_PROFILER(8);
-    }
+	TRACER_METHOD_END("Spectrum::ScoreSequenceVsSpectrum"); }
 }
 }

@@ -222,7 +222,7 @@ namespace myrimatch
         boost::mutex mutex;
 	};
 
-	struct SpectraList : public	PeakSpectraList< Spectrum, SpectraList >,
+    struct SpectraList : public	PeakSpectraList< Spectrum, SpectraList >,
 								SearchSpectraList< Spectrum, SpectraList >
 	{
 		using BaseSpectraList< Spectrum, SpectraList >::ListIndex;
