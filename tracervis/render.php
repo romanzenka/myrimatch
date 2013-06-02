@@ -138,8 +138,10 @@ function render_operation($id, $highlight_object_id)
     get_op_children($id, $result);
     ksort($result);
     echo "<table class=\"table table-condensed\">";
+    $prevValues = array();
     foreach ($result as $r) {
-        if($r['op_type']=='io' && $r['object_id']==$highlight_object_id) {
+        $objId = $r['object_id'];
+        if($r['op_type']=='io' && $objId==$highlight_object_id) {
             echo '<tr class="highlight">';
         } else {
             echo "<tr>";
@@ -149,7 +151,12 @@ function render_operation($id, $highlight_object_id)
             echo '<td><i class="icon-chevron-right"></i></td> ' .
                 '<td colspan="4">' . get_operation_link($r, -1) . '</td>';
         } else if ($r['op_type'] == 'io') {
-            echo render_io($r);
+            $prevValue = '';
+            if(array_key_exists($objId, $prevValues)) {
+                $prevValue = $prevValues[$objId];
+            }
+            echo render_io($r, 'object', '', $prevValue);
+            $prevValues[$objId] = $r;
         }
         echo "</tr>";
     }
