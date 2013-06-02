@@ -23,8 +23,8 @@ function vis_vector($vector, $id, $prev_vector='') {
     }
     $maxval = max($values);
     $num = count($values);
-    $width = 500;
-    $height = 50;
+    $width = 2048;
+    $height = 80;
     $bar_width = $width/$num;
     ob_start();
 ?>
@@ -36,7 +36,7 @@ function vis_vector($vector, $id, $prev_vector='') {
         var ctx = canvas.getContext('2d');
         ctx.fillStyle = "#eeeeee";
         ctx.fillRect(0, 0, <?php echo $width; ?>, <?php echo $height; ?>);
-        ctx.fillStyle = '#FF0000';
+        ctx.fillStyle = '#000000';
 <?php
     if($maxval > 0) {
         foreach($values as $x => $y) {
@@ -47,10 +47,15 @@ function vis_vector($vector, $id, $prev_vector='') {
                 if($y==$prev_value) {
                     echo 'ctx.fillStyle = \'#000000\';';
                 } else {
-                    echo 'ctx.fillStyle = \'#FF0000\';';
+                    echo 'ctx.fillStyle = \'#0000dd\';';
                 }
             }
-            echo "ctx.fillRect($xpos, ".($height-$h).", $bar_width, $h);";
+            if($h>=0) {
+                echo "ctx.fillRect($xpos, ".($height-$h).", $bar_width, $h);";
+            } else {
+                $neg_h = -$h;
+                echo "ctx.fillRect($xpos, 0, $bar_width, $neg_h);";
+            }
         }
     }
 ?>
@@ -98,9 +103,9 @@ function vis_spectrum($data, $id, $prevData='') {
         $minX = min($minX, min($mzs2));
         $maxX = max($maxX, max($mzs2));
     }
-    $width = 600;
+    $width = 2048;
     $height = 80;
-    $bar_width = 0.5;
+    $bar_width = 1.0;
     ob_start();
 ?>
     <canvas id="canvas<?php echo $id?>" width="<?php echo $width; ?>" height="<?php echo $height; ?>">
