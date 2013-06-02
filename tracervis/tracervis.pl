@@ -84,7 +84,7 @@ sub op_end {
 }
 
 sub tr_dump {
-	my ($id, $mem, $type, $value, $name, $heap, $operation, $note, $file, $line) = @_;
+	my ($id, $mem, $name, $heap, $operation, $note, $file, $line, $type, $value) = @_;
 	# $heap - 1-heap, 2-stack
 	# $operation - 1-read, 2-write, 3-note
 
