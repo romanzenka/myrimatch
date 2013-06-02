@@ -85,7 +85,7 @@ const char * tracer_id(const freicore::BaseSpectrum *x);
 const char * tracer_id(void *ptr);
 
 #define TRACER(variable, operation, heap, note) { cout << "[TRACER]" << '\t' << "dump" << '\t' << #variable << '\t' << heap << '\t' << operation << '\t' << note << '\t' << __FILE__ << '\t' << __LINE__ << '\t'; tracer_dump(&(variable)); cout << '\n'; }
-#define TRACER_P(variable, type, representation, operation, heap, note) { cout << "[TRACER]" << '\t' << "dump" << '\t' << &(variable) << '\t' << type << '\t' << representation << '\t' << #variable << '\t' << heap << '\t' << operation << '\t' << note << '\t' << __FILE__ << '\t' << __LINE__ << '\n'; }
+#define TRACER_P(variable, type, representation, operation, heap, note) { cout << "[TRACER]" << '\t' << "dump" << '\t' << #variable << '\t' << heap << '\t' << operation << '\t' << note << '\t' << __FILE__ << '\t' << __LINE__ << '\t' << &(variable) << '\t' << type << '\t' << representation << '\n'; }
 // Reference a variable in an operation, do not dump all its info
 #define TRACER_REF(variable, operation, heap, note) { cout << "[TRACER]" << '\t' << "ref" << '\t' << &(variable) << '\t' << #variable << '\t' << heap << '\t' << operation << '\t' << note << '\t' << __FILE__ << '\t' << __LINE__ << '\n'; }
 #define TRACER_UNLINK(variable) { cout << "[TRACER]" << '\t' << "unlink" << '\t' << &(variable) << '\t' << #variable << '\t' __FILE__ << '\t' << __LINE__ << '\n'; }
