@@ -29,6 +29,12 @@ namespace pwiz {
 	namespace util { 
 		class IntegerSet;
 	}
+	namespace proteome {
+		class Peptide;
+		class Digestion;
+		class Modification;
+		class ModificationMap;
+	}
 }
 
 namespace freicore {
@@ -41,6 +47,7 @@ namespace freicore {
         struct PeakInfo;
         struct SpectraList;
 		enum MzToleranceRule;
+		struct SearchResult;
     }
 }
 
@@ -77,7 +84,7 @@ const char * tracer_id(const freicore::myrimatch::Spectrum *x);
 const char * tracer_id(const freicore::BaseSpectrum *x);
 const char * tracer_id(void *ptr);
 
-#define TRACER(variable, operation, heap, note) { cout << "[TRACER]" << '\t' << "dump" << '\t'; tracer_dump(&(variable)); cout << '\t' << #variable << '\t' << heap << '\t' << operation << '\t' << note << '\t' << __FILE__ << '\t' << __LINE__ << '\n'; }
+#define TRACER(variable, operation, heap, note) { cout << "[TRACER]" << '\t' << "dump" << '\t' << #variable << '\t' << heap << '\t' << operation << '\t' << note << '\t' << __FILE__ << '\t' << __LINE__ << '\t'; tracer_dump(&(variable)); cout << '\n'; }
 #define TRACER_P(variable, type, representation, operation, heap, note) { cout << "[TRACER]" << '\t' << "dump" << '\t' << &(variable) << '\t' << type << '\t' << representation << '\t' << #variable << '\t' << heap << '\t' << operation << '\t' << note << '\t' << __FILE__ << '\t' << __LINE__ << '\n'; }
 // Reference a variable in an operation, do not dump all its info
 #define TRACER_REF(variable, operation, heap, note) { cout << "[TRACER]" << '\t' << "ref" << '\t' << &(variable) << '\t' << #variable << '\t' << heap << '\t' << operation << '\t' << note << '\t' << __FILE__ << '\t' << __LINE__ << '\n'; }
