@@ -83,9 +83,9 @@ namespace myrimatch
 
         // sort hypotheses ascending by mass
         sort(precursorMassHypotheses.begin(), precursorMassHypotheses.end());
-		BOOST_FOREACH(PrecursorMassHypothesis h, precursorMassHypotheses) { TRACER(h, WRITE, HEAP, "Precursor mass hypothesis"); }
+		BOOST_FOREACH(PrecursorMassHypothesis &h, precursorMassHypotheses) { TRACER(h, WRITE, HEAP, "Precursor mass hypothesis"); }
         //PeakPreData unfilteredPeakPreData = peakPreData;
-		TRACER_OP_START("Filter out peaks above the largest precursor hypothesis mass"); TRACER(peakPreData, READ, HEAP, "Preprocessed peak data"); TRACER(precursorMassHypotheses.back().mass, READ, HEAP, "Maximum precursor mass hypothesis"); TRACER(g_rtConfig->AvgPrecursorMzTolerance, READ, HEAP, "Average precursor m/z tolerance");
+		TRACER_OP_START("Filter out peaks above the largest precursor hypothesis mass"); TRACER(peakPreData, READ, HEAP, "Preprocessed peak data"); TRACER(precursorMassHypotheses.back(), READ, HEAP, "Maximum precursor mass hypothesis"); TRACER(g_rtConfig->AvgPrecursorMzTolerance, READ, HEAP, "Average precursor m/z tolerance");
         // filter out peaks above the largest precursor hypthesis' mass
         peakPreData.erase( peakPreData.upper_bound( precursorMassHypotheses.back().mass + g_rtConfig->AvgPrecursorMzTolerance ), peakPreData.end() );
 		TRACER(peakPreData, WRITE, HEAP, "Preprocessed peak data without peaks over max precursor mass"); TRACER_OP_END("Filter out peaks above the largest precursor hypothesis mass"); 
@@ -97,22 +97,22 @@ namespace myrimatch
 		FilterByTIC( g_rtConfig->TicCutoffPercentage );
         FilterByPeakCount( g_rtConfig->MaxPeakCount );
 
-		if( peakPreData.empty() )
-			return;
-
+		if( peakPreData.empty() ) {
+			TRACER_METHOD_END("Spectrum::Preprocess"); return; }
+		TRACER_OP_START("Remove water loss peaks"); TRACER(WATER_MONO, READ, HEAP, "monoisotopic mass of water"); TRACER(peakPreData, READ, HEAP, "Before removing water loss peaks");
         BOOST_FOREACH(int charge, possibleChargeStates)
-        {
+        {   TRACER_OP_START("Remove water loss for precursor and charge"); TRACER_BI; TRACER(mzOfPrecursor, READ, HEAP, "m/z of precursor"); TRACER(charge, READ, STACK, "charge"); double remove=mzOfPrecursor - WATER_MONO/charge; TRACER(remove, WRITE, STACK, "m/z for removing single water loss");
 		    PeakPreData::iterator precursorWaterLossItr = peakPreData.findNear( mzOfPrecursor - WATER_MONO/charge, g_rtConfig->FragmentMzTolerance, true );
 		    if( precursorWaterLossItr != peakPreData.end() )
 			    peakPreData.erase( precursorWaterLossItr );
-
+			double remove2=mzOfPrecursor - 2*WATER_MONO/charge; TRACER(remove2, WRITE, STACK, "m/z for removing double water loss");
 		    PeakPreData::iterator precursorDoubleWaterLossItr = peakPreData.findNear( mzOfPrecursor - 2*WATER_MONO/charge, g_rtConfig->FragmentMzTolerance, true );
 		    if( precursorDoubleWaterLossItr != peakPreData.end() )
-                peakPreData.erase( precursorDoubleWaterLossItr );
-        }
-
-		if( peakPreData.empty() )
-			return;
+                peakPreData.erase( precursorDoubleWaterLossItr ); 
+        TRACER_BO; TRACER_OP_END("Remove water loss for precursor and charge"); } TRACER(peakPreData, WRITE, HEAP, "After removing water loss peaks");
+		TRACER_OP_END("Remove water loss peaks");
+		if( peakPreData.empty() ) {
+			TRACER_METHOD_END("Spectrum::Preprocess"); return; }
 
         // results for each possible charge state are stored separately
         resultsByCharge.resize(possibleChargeStates.back());
@@ -156,7 +156,7 @@ namespace myrimatch
 		//	cout << totalPeakSpace << " " << mzUpperBound << " " << mzLowerBound << endl;
 
         // we no longer need the raw intensities
-		peakPreData.clear();
+		peakPreData.clear(); TRACER(peakPreData, WRITE, HEAP, "Data no longer needed");
 
         // set fragment types
         fragmentTypes.reset();
@@ -242,24 +242,24 @@ namespace myrimatch
         vector<float> basePeakIntensityByRegion(numberOfRegions, 1); TRACER(basePeakIntensityByRegion, WRITE, STACK, "initial base peak intensity for each region"); 
         int regionSelector = (int) (maxPeakMass / numberOfRegions); /* ROMAN - for better output */ int prevNormalizationIndex = -1; TRACER(regionSelector, WRITE, STACK, "region size");  
         for(PeakPreData::iterator itr = peakPreData.begin(); itr != peakPreData.end(); ++itr)
-        { TRACER_BI; TRACER(itr->second, READ, HEAP, "peak intensity");
-            itr->second = sqrt(itr->second); TRACER(itr->second, WRITE, HEAP, "sqrt peak intensity");
+        { TRACER_BI;
+            itr->second = sqrt(itr->second);
             int mzBin = round(itr->first / binWidth); 
             int normalizationIndex = mzBin / regionSelector; /* ROMAN */ if(prevNormalizationIndex!=normalizationIndex) { TRACER(itr->first, READ, HEAP, "Peak mass starting new region"); TRACER(normalizationIndex, WRITE, STACK, "Region number"); prevNormalizationIndex = normalizationIndex; }
             if( IS_VALID_INDEX( normalizationIndex,numberOfRegions ) )
                 basePeakIntensityByRegion[normalizationIndex] = max(basePeakIntensityByRegion[normalizationIndex],
                                                                     itr->second);
         TRACER_BO; } TRACER(basePeakIntensityByRegion, WRITE, STACK, "final base peak intensity for each region"); 
-        TRACER_OP_END("section spectrum into regions, find base peaks"); TRACER_OP_START("Normalize peaks 0-50");
+        TRACER_OP_END("section spectrum into regions, find base peaks"); TRACER_OP_START("Normalize peaks 0-50"); TRACER(peakPreData, READ, HEAP, "Peak data to normalize");
         // Normalize peaks in each region from 0 to 50. 
         // Use base peak in each region for normalization. 
         for(PeakPreData::iterator itr = peakPreData.begin(); itr != peakPreData.end(); ++itr)
-        { TRACER_OP_START("Normalize peak 0-50"); TRACER_OP_START("determine peak region"); TRACER(itr->first, READ, HEAP, "peak m/z"); TRACER(binWidth, READ, HEAP, "bin width");
-            int mzBin = round(itr->first / binWidth); TRACER(mzBin, WRITE, STACK, "bin number");
-            int normalizationIndex = mzBin / regionSelector; TRACER(regionSelector, READ, STACK, "region size"); TRACER(normalizationIndex, WRITE, STACK, "peak region"); TRACER_OP_END("determine peak region"); TRACER(normalizationIndex, READ, STACK, "peak region");
-            if( IS_VALID_INDEX( normalizationIndex,numberOfRegions ) ) /* ROMAN */ { TRACER(itr->second, READ, HEAP, "sqrt peak intensity"); TRACER(basePeakIntensityByRegion[normalizationIndex], READ, STACK, "max intensity for region"); 
-                peakData[itr->first].normalizedIntensity = (itr->second / basePeakIntensityByRegion[normalizationIndex]) * 50; TRACER(peakData[itr->first].normalizedIntensity, WRITE, HEAP, "normalized peak intensity"); } else { TRACER(peakData[itr->first].normalizedIntensity, READ, HEAP, "Unchanged normalized intensity"); }
-        TRACER_OP_END("Normalize peak 0-50"); } TRACER_BO; TRACER_OP_END("Normalize peaks 0-50"); TRACER(peakData, WRITE, HEAP, "Normalized peaks"); TRACER_METHOD_END("Spectrum::NormalizePeakIntensities");
+        { 
+            int mzBin = round(itr->first / binWidth); 
+            int normalizationIndex = mzBin / regionSelector;
+            if( IS_VALID_INDEX( normalizationIndex,numberOfRegions ) ) /* ROMAN */ { 
+                peakData[itr->first].normalizedIntensity = (itr->second / basePeakIntensityByRegion[normalizationIndex]) * 50; } else { TRACER(itr->first, READ, HEAP, "Peak intensity not normalized - BUG"); }
+        } TRACER(peakData, WRITE, HEAP, "Normalized peaks"); TRACER_OP_END("Normalize peaks 0-50"); TRACER_METHOD_END("Spectrum::NormalizePeakIntensities");
     }
 
     // Assign an intensity of 50 to fragment ions. 
@@ -299,13 +299,13 @@ namespace myrimatch
     void Spectrum::ComputeXCorrs()
     { TRACER_METHOD_START("Spectrum::ComputeXCorrs"); 
         BOOST_FOREACH(int chargeHypothesis, possibleChargeStates)
-        {
+        { TRACER_OP_START("Test charge hypothesis"); TRACER_BI; TRACER(chargeHypothesis, WRITE, STACK, "charge hypothesis");
             // Get the number of bins and bin width for the processed peak array
-            double massCutOff;
+            double massCutOff; TRACER(precursorMassHypotheses, READ, HEAP, "Mass hypotheses");
             BOOST_REVERSE_FOREACH(PrecursorMassHypothesis& hypothesis, precursorMassHypotheses)
                 if (hypothesis.charge == chargeHypothesis)
                 {
-                    massCutOff = hypothesis.mass + 50;
+                    massCutOff = hypothesis.mass + 50; TRACER(massCutOff, WRITE, STACK, "mass cutoff - 50 + mass hypothesis for the charge");
                     break;
                 }
 
@@ -314,40 +314,40 @@ namespace myrimatch
                 maxBins = (int) ceil(massCutOff / 1024) * 1024;
             else
                 maxBins = 512;
-
+			TRACER(maxBins, WRITE, STACK, "Maximum bins for the spectrum");
             // populate a vector representation of the peak data
             vector<float> peakDataForXCorr(maxBins, 0);
             int peakDataLength = peakDataForXCorr.size();
-            
+            TRACER(peakDataForXCorr, WRITE, STACK, "binned spectrum peaks, empty"); TRACER(peakData, READ, HEAP, "normalized spectrum peaks");
             for (PeakData::iterator itr = peakData.begin(); itr != peakData.end(); ++itr)
             {
                 int mzBin = round(itr->first / binWidth);
-                if ( IS_VALID_INDEX(mzBin,maxBins) )
-                    peakDataForXCorr[mzBin] = itr->second.normalizedIntensity;
-            }
+				if ( IS_VALID_INDEX(mzBin,maxBins) ) { if(peakDataForXCorr[mzBin]!=0) { TRACER_OP_START("Overwriting bin value with newer peak"); TRACER(mzBin, READ, STACK, "Bin number"); TRACER(peakDataForXCorr[mzBin], READ, STACK, "Old value"); TRACER(itr->second.normalizedIntensity, WRITE, STACK, "New value"); TRACER_OP_END("Overwriting bin value with newer peak"); }
+					peakDataForXCorr[mzBin] = itr->second.normalizedIntensity; }
+            } TRACER(peakDataForXCorr, WRITE, STACK, "binned spectrum peaks");
 
             // Compute the cumulative spectrum
             for (int i = 0; i < peakDataLength; ++i)
                 for (int j = i - 75; j <= i + 75; ++j)
                     if ( IS_VALID_INDEX(j,maxBins) )
                         peakDataForXCorr[i] -= (peakDataForXCorr[j] / 151);
+			TRACER(peakDataForXCorr, WRITE, STACK, "dampen each bin by average intensity of (-75, +75) bins - BUG");
+            int z = chargeHypothesis-1; TRACER(z, WRITE, STACK, "charge - 1");
+            int maxIonCharge = max(1, z); TRACER(maxIonCharge, WRITE, STACK, "max ion charge -1");
 
-            int z = chargeHypothesis-1;
-            int maxIonCharge = max(1, z);
-
-            SearchResultSetType& resultSet = resultsByCharge[z];
+            SearchResultSetType& resultSet = resultsByCharge[z]; //TRACER(resultSet, READ, HEAP, "result for charge");
             typedef SearchResultSetType::RankMap RankMap;
 
-            if (resultSet.empty())
-                continue;
+            if (resultSet.empty()) {
+				TRACER_BO; bool empty=true; TRACER(empty, WRITE, STACK, "empty result set for charge, skipping"); TRACER_OP_END("Test charge hypothesis"); continue; }
 
-            RankMap resultsByRank = resultSet.byRankAndCategory();
+            RankMap resultsByRank = resultSet.byRankAndCategory(); //TRACER(resultsByRank, WRITE, STACK, "results by rank and category");
 
             // first=rank, second=vector of tied results
             BOOST_FOREACH(RankMap::value_type& rank, resultsByRank)
             BOOST_FOREACH(const SearchResultSetType::SearchResultPtr& resultPtr, rank.second)
-            { TRACER_BI;
-                const SearchResult& result = *resultPtr;
+            { TRACER_BI; //TRACER(rank, WRITE, STACK, "rank"); 
+                const SearchResult& result = *resultPtr; //TRACER(result, READ, STACK, "search results");
 
                 // Get the expected width of the array
                 vector<float> theoreticalSpectrum(peakDataLength, 0); TRACER(theoreticalSpectrum, WRITE, STACK, "theoretical spectrum (binned)");
@@ -355,9 +355,9 @@ namespace myrimatch
                 size_t seqLength = result.sequence().length();
 
                 // For each peptide bond and charge state
-                Fragmentation fragmentation = result.fragmentation(true, true);
+                Fragmentation fragmentation = result.fragmentation(true, true); //TRACER(fragmentation, WRITE, STACK, "fragmentation");
                 for(int charge = 1; charge <= maxIonCharge; ++charge)
-                {
+                { TRACER_OP_START("add theoretical ions for charge"); TRACER_BI; TRACER(charge, WRITE, STACK, "charge"); 
                     for(size_t fragIndex = 0; fragIndex < seqLength; ++fragIndex)
                     {
                         size_t nLength = fragIndex;
@@ -385,13 +385,13 @@ namespace myrimatch
                                 addXCorrFragmentIon(theoreticalSpectrum, fragmentation.zRadical(cLength, charge), charge, FragmentType_Z_Radical);
                         }
                     }
-                }
-                
-                double rawXCorr = 0.0;
+                TRACER_BO; TRACER_OP_END("add theoretical ions for charge"); }
+                TRACER_OP_START("compute dot product of theoretical spectrum and binned peaks"); TRACER(peakDataForXCorr, READ, STACK, "peak data"); TRACER(theoreticalSpectrum, READ, STACK, "theoretical spectrum");
+                double rawXCorr = 0.0; 
                 for(int index = 0; index < peakDataLength; ++index)
                     rawXCorr += peakDataForXCorr[index] * theoreticalSpectrum[index];
-                (const_cast<Spectrum::SearchResultType&>(result)).XCorr = (rawXCorr / 1e4);
-            TRACER_BO; }
+                TRACER(rawXCorr, WRITE, STACK, "raw xcorr"); (const_cast<Spectrum::SearchResultType&>(result)).XCorr = (rawXCorr / 1e4); TRACER((const_cast<Spectrum::SearchResultType&>(result)).XCorr, WRITE, HEAP, "search result xcorr"); TRACER_OP_END("compute dot product of theoretical spectrum and binned peaks"); 
+            TRACER_BO; } TRACER_BO; TRACER_OP_END("Test charge hypothesis");
         }
     TRACER_METHOD_END("Spectrum::ComputeXCorrs");}
 
