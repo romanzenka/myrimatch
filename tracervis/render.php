@@ -65,9 +65,9 @@ function render_value($value, $id, $type, $prev_value='') {
     if($type == 'std::vector<float>') {
         $result .= vis_vector($value, $id, $prev_value);
     } else if($type == 'freicore::PeakPreData') {
-        $result .= vis_spectrum($value, $id);
+        $result .= vis_spectrum($value, $id, $prev_value);
     } else if($type == 'freicore::myrimatch::Spectrum::PeakData') {
-        $result .= vis_spectrum($value, $id);
+        $result .= vis_spectrum($value, $id, $prev_value);
     } else {
         $result .=  '<pre>' . stripcslashes($value) . '</pre>';
     }
