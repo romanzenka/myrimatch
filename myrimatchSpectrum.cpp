@@ -234,7 +234,7 @@ namespace myrimatch
         TRACER(maxBins, WRITE, STACK, "max number of bins");  TRACER(peakPreData, READ, HEAP, "Peak data for the spectrum");
         // Detemine the max mass of a fragmet peak.
         double maxPeakMass = peakPreData.rbegin()->first; TRACER(maxPeakMass, WRITE, STACK, "maximum peak mass"); 
-        TRACER_OP_START("section spectrum into regions, find base peaks");
+        TRACER_OP_START("section spectrum into regions, find base peaks"); TRACER(peakPreData, READ, HEAP, "peaks intensities normal");
         // Section the original peak array in 10 regions and find the
         // base peak in each region. Also, square-root the peak intensities
         const int numberOfRegions = 10; TRACER(numberOfRegions, READ, STACK, "number of regions"); 
@@ -249,7 +249,7 @@ namespace myrimatch
             if( IS_VALID_INDEX( normalizationIndex,numberOfRegions ) )
                 basePeakIntensityByRegion[normalizationIndex] = max(basePeakIntensityByRegion[normalizationIndex],
                                                                     itr->second);
-        TRACER_BO; } TRACER(basePeakIntensityByRegion, WRITE, STACK, "final base peak intensity for each region"); 
+        TRACER_BO; } TRACER(peakPreData, WRITE, HEAP, "peaks intensity square rooted"); TRACER(basePeakIntensityByRegion, WRITE, STACK, "final base peak intensity for each region"); 
         TRACER_OP_END("section spectrum into regions, find base peaks"); TRACER_OP_START("Normalize peaks 0-50"); TRACER(peakPreData, READ, HEAP, "Peak data to normalize");
         // Normalize peaks in each region from 0 to 50. 
         // Use base peak in each region for normalization. 
@@ -346,8 +346,8 @@ namespace myrimatch
             // first=rank, second=vector of tied results
             BOOST_FOREACH(RankMap::value_type& rank, resultsByRank)
             BOOST_FOREACH(const SearchResultSetType::SearchResultPtr& resultPtr, rank.second)
-            { TRACER_BI; //TRACER(rank, WRITE, STACK, "rank"); 
-                const SearchResult& result = *resultPtr; //TRACER(result, READ, STACK, "search results");
+            { TRACER_OP_START("calculate xcorr for search result"); TRACER_BI; //TRACER(rank, WRITE, STACK, "rank"); 
+                const SearchResult& result = *resultPtr; // TRACER(result, READ, STACK, "search results");
 
                 // Get the expected width of the array
                 vector<float> theoreticalSpectrum(peakDataLength, 0); TRACER(theoreticalSpectrum, WRITE, STACK, "theoretical spectrum (binned)");
@@ -391,7 +391,7 @@ namespace myrimatch
                 for(int index = 0; index < peakDataLength; ++index)
                     rawXCorr += peakDataForXCorr[index] * theoreticalSpectrum[index];
                 TRACER(rawXCorr, WRITE, STACK, "raw xcorr"); (const_cast<Spectrum::SearchResultType&>(result)).XCorr = (rawXCorr / 1e4); TRACER((const_cast<Spectrum::SearchResultType&>(result)).XCorr, WRITE, HEAP, "search result xcorr"); TRACER_OP_END("compute dot product of theoretical spectrum and binned peaks"); 
-            TRACER_BO; } TRACER_BO; TRACER_OP_END("Test charge hypothesis");
+            TRACER_BO; TRACER_OP_END("calculate xcorr for search result"); } TRACER_BO; TRACER_OP_END("Test charge hypothesis");
         }
     TRACER_METHOD_END("Spectrum::ComputeXCorrs");}
 

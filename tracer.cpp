@@ -5,6 +5,12 @@
 
 #include "myrimatchSpectrum.h"
 
+#define LITERAL '.'
+#define STRUCT_START '['
+#define STRUCT_END ']'
+#define MAP_START '{'
+#define MAP_END '}'
+
 void esc(const char *s) {
 	const char *ptr = s;
 	while(*ptr) {
@@ -43,135 +49,171 @@ void esc_tab(const char *s) {
 }
 
 void tracer_dump(const string *x) {
-	cout << x << '\t' << "std::string" << '\t'; esc(x->c_str());
+	cout << LITERAL << '\t' << x << '\t' << "std::string" << '\t'; esc(x->c_str());
 }
 
-void tracer_dump(const vector<string> *x) {
-	cout << x << '\t' << "std::vector<string>" << '\t';
+template <typename T>
+void dump_vector_struct(const T *x) {
+	cout << '\t';
 	bool tab = false;
-	BOOST_FOREACH(string s, *x) {
+	int i = 0;
+	for(T::const_iterator it = x->cbegin(); it!=x->cend(); it++) {
+		if(tab) {
+			cout <<  '\t';
+		}
+		tab = true;
+		cout << i << '\t';
+		tracer_dump(&(*it));
+		i++;
+	}
+	cout << '\t' << STRUCT_END;
+}
+
+template <typename T>
+void dump_vector_ptr_struct(const T *x) {
+	cout << '\t';
+	bool tab = false;
+	int i = 0;
+	for(T::const_iterator it = x->cbegin(); it!=x->cend(); it++) {
+		if(tab) {
+			cout <<  '\t';
+		}
+		tab = true;
+		cout << i << '\t';
+		tracer_dump(*it);
+		i++;
+	}
+	cout << '\t' << STRUCT_END;
+}
+
+
+void tracer_dump(const vector<string> *x) {
+	cout << STRUCT_START << '\t' << x << '\t' << "std::vector<string>";
+	dump_vector_struct(x);
+}
+
+template<typename T, typename S>
+void dump_map(const map<T, S> *x) {
+	typedef map<T, S>::const_iterator iter;
+	bool tab = false;
+	for(iter it = x->cbegin(); it != x->cend(); it++) {
+		if(tab) {
+			cout << "\t";
+		}
+		tab = true;
+		tracer_dump(&(it->first));
+		cout << "\t";
+		tracer_dump(&(it->second));
+	}
+	cout << '\t' << MAP_END;
+}
+
+void tracer_dump(const map<string, string> *x) {
+	cout << MAP_START << '\t' << x << '\t' << "std::map<string, string>" << '\t';
+	dump_map(x);
+}
+
+template <typename T>
+void dump_vector_literal(const vector<T> *x) {
+	bool tab = false;
+	BOOST_FOREACH(T v, *x) {
 		if(tab) {
 			cout <<  "\\t";
 		}
 		tab = true;
-		esc_tab(s.c_str());
-	}
-}
-
-void tracer_dump(const map<string, string> *x) {
-	cout << x << '\t' << "std::map<string, string>" << '\t';
-	std::pair<string, string> p;
-	bool tab = false;
-	BOOST_FOREACH(p, *x) {
-		if(tab) {
-			cout << "\\t";
-		}
-		tab = true;
-		esc_tab(p.first.c_str());
-		cout << " ==> ";
-		esc_tab(p.second.c_str());
+		cout << v;
 	}
 }
 
 void tracer_dump(const vector<double> *x) {
-	cout << x << '\t' << "std::vector<double>" << '\t';
-	bool tab = false;
-	BOOST_FOREACH(double v, *x) {
-		if(tab) {
-			cout <<  "\\t";
-		}
-		tab = true;
-		cout << v;
-	}
+	cout << LITERAL << '\t' << x << '\t' << "std::vector<double>" << '\t';
+	dump_vector_literal(x);
 }
 
 void tracer_dump(const vector<float> *x) {
-	cout << x << '\t' << "std::vector<float>" << '\t';
-	bool tab = false;
-	BOOST_FOREACH(float v, *x) {
-		if(tab) {
-			cout <<  "\\t";
-		}
-		tab = true;
-		cout << v;
-	}
+	cout << LITERAL << '\t' << x << '\t' << "std::vector<float>" << '\t';
+	dump_vector_literal(x);
 }
 
 void tracer_dump(const vector<int> *x) {
-	cout << x << '\t' << "std::vector<int>" << '\t';
-	bool tab = false;
-	BOOST_FOREACH(int v, *x) {
-		if(tab) {
-			cout <<  "\\t";
-		}
-		tab = true;
-		cout << v;
-	}
+	cout << LITERAL << '\t' << x << '\t' << "std::vector<int>" << '\t';
+	dump_vector_literal(x);
 }
 
 void tracer_dump(const size_t *x) {
-	cout << x << '\t' << "size_t" << '\t' << *x;
+	cout << LITERAL << '\t' << x << '\t' << "size_t" << '\t' << *x;
 }
 
 void tracer_dump(const int *x) {
-	cout << x << '\t' << "int" << '\t' << *x;
+	cout << LITERAL << '\t' << x << '\t' << "int" << '\t' << *x;
 }
 
 void tracer_dump(const float *x) {
-	cout << x << '\t' << "float" << '\t' << *x;
+	cout << LITERAL << '\t' << x << '\t' << "float" << '\t' << *x;
 }
 
 void tracer_dump(const double *x) {
-	cout << x << '\t' << "double" << '\t' << *x;
+	cout << LITERAL << '\t' << x << '\t' << "double" << '\t' << *x;
 }
 
 void tracer_dump(const char *x) {
-	cout << x << '\t' << "char" << '\t' << *x;
+	cout << LITERAL << '\t' << x << '\t' << "char" << '\t' << *x;
 }
 
 void tracer_dump(const bool *x) {
-	cout << x << '\t' << "bool" << '\t' << (*x ?  "true" : "false");
+	cout << LITERAL << '\t' << x << '\t' << "bool" << '\t' << (*x ?  "true" : "false");
 }
 
 void tracer_dump(const IntegerSet *x) {
-	cout << x << '\t' << "IntegerSet" << '\t' << *x;
+	cout << LITERAL << '\t' << x << '\t' << "IntegerSet" << '\t' << *x;
 }
 
 void tracer_dump(const boost::regex *x) {
-	cout << x << '\t' << "boost::regex" << '\t' << *x;
+	cout << LITERAL << '\t' << x << '\t' << "boost::regex" << '\t' << *x;
+}
+
+template <typename T, typename S> 
+void dump_pair(const std::pair<T, S> *x) {
+	cout << STRUCT_START << '\t' << x << '\t' << "std::pair" << '\t';
+	cout << "first" << '\t';
+	tracer_dump(&(x->first));
+	cout << '\t' << "second" << '\t';
+	tracer_dump(&(x->second));
+	cout << '\t' << STRUCT_END;
 }
 
 void tracer_dump(const freicore::PeakPreData *x) {
-	cout << x << '\t' << "freicore::PeakPreData" << '\t';
-	std::pair<double, float> p;
+	cout << LITERAL << '\t' << x << '\t' << "freicore::PeakPreData" << '\t';
+	typedef std::pair<double, float> pairT; 
 	bool tab = false;
-	BOOST_FOREACH(p, *x) {
+	BOOST_FOREACH(const pairT & p, *x) {
 		if(tab) {
 			cout << "\\t";
 		}
 		tab = true;
-        cout << p.first << ", " << p.second;
+		cout << p.first << ", " << p.second;
 	}
 }
 
 void tracer_dump(const freicore::myrimatch::SpectraList *x) {
-	cout << x << '\t' << "freicore::myrimatch::SpectraList" << '\t' << "List of " << x->size() << " spectra";
+	cout << STRUCT_START << '\t' << x << '\t' << "freicore::myrimatch::SpectraList";
+	dump_vector_ptr_struct(x);
 }
 
 void tracer_dump(const freicore::myrimatch::Spectrum *x) {
-    cout << x << '\t' << "freicore::myrimatch::Spectrum" << '\t';
+    cout << LITERAL << '\t' << x << '\t' << "freicore::myrimatch::Spectrum" << '\t';
     esc(x->nativeID.c_str());
 }
 
 void tracer_dump(const freicore::BaseSpectrum *x) {
-    cout << x << '\t' << "freicore::BaseSpectrum" << '\t';
+    cout << LITERAL << '\t' << x << '\t' << "freicore::BaseSpectrum" << '\t';
     esc(x->nativeID.c_str());
 }
 
 void tracer_dump(const boost::container::flat_map<double, freicore::myrimatch::PeakInfo> *x) {
-    cout << x << '\t' << "freicore::myrimatch::Spectrum::PeakData" << '\t';
+    cout << LITERAL << '\t' << x << '\t' << "freicore::myrimatch::Spectrum::PeakData" << '\t';
     bool tab = false;
-    for (boost::container::flat_map<double, freicore::myrimatch::PeakInfo>::const_iterator itr = x->begin(); itr != x->end(); ++itr)
+    for (boost::container::flat_map<double, freicore::myrimatch::PeakInfo>::const_iterator itr = x->cbegin(); itr != x->cend(); ++itr)
     {
         double mz = itr->first;
         float normalizedIntensity = itr->second.normalizedIntensity;
@@ -179,39 +221,47 @@ void tracer_dump(const boost::container::flat_map<double, freicore::myrimatch::P
             cout << "\\t";
         }
         tab = true;
-        cout << mz << ", " << normalizedIntensity;
+		cout << mz << ", " << normalizedIntensity;
     }
 }
 
 void tracer_dump(const freicore::PrecursorMassHypothesis *x) {
-	cout << x << '\t' << "freicore::PrecursorMassHypothesis" << '\t';
-	cout << "m:" << x->mass << ", " << "z:" << x->charge;
+	cout << STRUCT_START << '\t' << x << '\t' << "freicore::PrecursorMassHypothesis";
+	cout  << '\t' << "mass" << '\t';
+	tracer_dump(&(x->mass));
+	cout << '\t' << "charge" << '\t';
+	tracer_dump(&(x->charge));
+	cout << '\t' << STRUCT_END;
 }
 
 void tracer_dump(const vector<freicore::PrecursorMassHypothesis> *x) {
-    cout << x << '\t' << "std::vector<freicore::PrecursorMassHypothesis>" << '\t';
+    cout << STRUCT_START << '\t' << x << '\t' << "std::vector<freicore::PrecursorMassHypothesis>" << '\t';
 	bool tab = false;
-	BOOST_FOREACH(freicore::PrecursorMassHypothesis m, *x) {
+	int i = 0;
+	BOOST_FOREACH(const freicore::PrecursorMassHypothesis & m, *x) {
 		if(tab) {
-			cout <<  "\\t";
+			cout <<  "\t";
 		}
 		tab = true;
-		cout << "m:" << m.mass << ", " << "z:" << m.charge;
+		cout << i << '\t';
+		tracer_dump(&m);
+		i++;
 	}
+	cout << '\t' << STRUCT_END;
 }
 
 void tracer_dump(const pwiz::chemistry::MZTolerance *x) {
-	cout << x << '\t' << "pwiz::chemistry::MZTolerance" << '\t';
+	cout << LITERAL << '\t' << x << '\t' << "pwiz::chemistry::MZTolerance" << '\t';
 	cout << x->value << (x->units == pwiz::chemistry::MZTolerance::MZ ? "m/z" : "ppm");	
 }
 
 void tracer_dump(const freicore::MassType *x) {
-	cout << x << '\t' << "freicore::MassType" << '\t';
+	cout << LITERAL << '\t' << x << '\t' << "freicore::MassType" << '\t';
 	cout << (*x == freicore::MassType_Monoisotopic ? "monoisotopic" : "average");	
 }
 
 void tracer_dump(const freicore::myrimatch::MzToleranceRule *x) {
-	cout << x << '\t' << "freicore::MzToleranceRule" << '\t';
+	cout << LITERAL << '\t' << x << '\t' << "freicore::MzToleranceRule" << '\t';
 	switch(*x) {
 	case freicore::myrimatch::MzToleranceRule_Auto:
 		cout << "auto";

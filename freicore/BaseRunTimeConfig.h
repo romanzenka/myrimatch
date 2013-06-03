@@ -119,12 +119,12 @@ namespace freicore
         // boost::lexical_cast fails on BOOST_ENUM types
         stringstream ss;
         ss << T(rhs);
-        ss >> lhs;
+        ss >> lhs; TRACER_OP_START("parse value"); TRACER(T(rhs), READ, HEAP, "value to parse"); TRACER(lhs, WRITE, HEAP, "parsed value"); TRACER_OP_END("parse value"); 
         return lhs;
     }
 
     template <typename T, typename S>
-    inline T& parse(T& lhs, const S& rhs) {return lhs = lexical_cast<T,S>(rhs);}
+    inline T& parse(T& lhs, const S& rhs) {return lhs = lexical_cast<T,S>(rhs); TRACER_OP_START("parse value"); TRACER(rhs, READ, HEAP, "value to parse"); TRACER(lhs, WRITE, HEAP, "parsed value"); TRACER_OP_END("parse value"); }
 
     inline MZTolerance& parse(MZTolerance& lhs, const string& rhs)
     {
