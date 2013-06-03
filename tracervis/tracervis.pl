@@ -41,9 +41,34 @@ my $sth_insert_io;
 
 my @op_stack = (); # Stack of operations
 
+my $object_id = 0; # Object id counter, incremented on each new object encountered
+
 my @mem_stack = (); # Stack. Each level contains an array of all object memory addresses allocated in that stack frame
 my %objects = (); # Map from MEM address -> object id
-my $object_id = 0; # Object id counter, incremented on each new object encountered
+
+# Object is defined by memory location + type
+sub is_defined_object {
+    my ($mem, $type) = @_;
+    return defined $objects{"$mem:$type"};
+}
+
+sub define_object {
+    my ($mem, $type, $obj, $stack) = @_;
+    $objects{"$mem:$type"} = $obj;
+    if($stack) {
+        $mem_stack[-1]{"$mem:$type"} = 1;
+    }
+}
+
+sub get_object {
+    my ($mem, $type) = @_;
+    return $objects{"$mem:$type"};
+}
+
+sub undefine_object {
+    my ($mem, $type) = @_;
+    delete $objects{"$mem:$type"};
+}
 
 sub add_code {
 	my ($id, $file, $line) = @_;
@@ -89,19 +114,57 @@ sub add_object {
 	my ($id, $name, $heap, $operation, $note, $code, $mem, $type, $value, $parent_io, $parent_relation) = @_;
 
     my $obj;
-    if(defined $objects{$mem}) {
-        $obj = $objects{$mem};
+    if(is_defined_object($mem, $type)) {
+        $obj = get_object($mem, $type);
     } else {
         $object_id++;
         $obj = { 'id' => $object_id, 'allocated_time' => $id, 'type' => $type };
-        $objects{$mem} = $obj;
-        if($heap eq '2') {
-            # Stack: This object will get deallocated when leaving this stack frame
-            $mem_stack[-1]{$mem} = 1;
-        }
+        define_object($mem, $type, $obj, $heap eq '2');
     }
     $sth_insert_io->execute($id, $obj->{'id'}, $op_stack[-1]->{'id'}, $name, $value, $operation, $note, $code, $parent_io, $parent_relation) || die "Couldn't add io: " . $dbh->errstr;
     return $dbh->last_insert_id("","","","");
+}
+
+sub display_serialization {
+    my($offset, $tab, $serialization_ref) = @_;
+    my @serialization = @{$serialization_ref};
+    if(scalar @serialization == 0) { return -1; }
+    if((scalar @serialization)<=$offset) {
+        print STDERR "offset problem $offset : " . display_serialization(0, \@serialization) . "\n";
+        return $offset;
+    }
+    my $lookup = $serialization[$offset++];
+
+    if($lookup eq '.') { # Literal
+        my $mem = $serialization[$offset++];
+        my $type = $serialization[$offset++];
+        my $value = $serialization[$offset++];
+        print STDERR "$tab object $mem $type $value\n";
+    } elsif($lookup eq '[') { # Array or structure
+        my $mem = $serialization[$offset++];
+        my $type = $serialization[$offset++];
+        print STDERR "$tab struct $mem $type\n";
+        while($serialization[$offset] ne ']') {
+            my $member = $serialization[$offset++];
+            print "$tab $member:\n";
+            $offset = display_serialization($offset, "\t".$tab, $serialization_ref);
+        }
+        $offset++; # Eat up the closing bracket
+    } elsif($lookup eq '1{') {
+        my $mem = $serialization[$offset++];
+        my $type = $serialization[$offset++];
+        print STDERR "$tab hash $mem $type\n";
+
+        my $i=0;
+        while($serialization[$offset] ne '}') {
+            $offset = display_serialization($offset, "\t".$tab, $serialization_ref);
+            $offset = display_serialization($offset, "\t".$tab, $serialization_ref);
+            $i++;
+        }
+        $offset++; # Eat up the closing brace
+    }
+    return $offset;
+
 }
 
 # Parse a serialized object into all sub-objects
@@ -111,7 +174,9 @@ sub parse_obj {
     my @serialization = @{$serialization_ref};
     if(scalar @serialization == 0) { return -1; }
     if((scalar @serialization)<=$offset) {
-        print STDERR "offset problem $offset : " . join(' ', @serialization) . "\n";
+        print STDERR join("\t", @serialization) . "\n";
+        print STDERR "----\n";
+        print STDERR "offset problem $offset : " . display_serialization(0, '', \@serialization) . "\n";
     }
     my $lookup = $serialization[$offset++];
 
@@ -161,13 +226,14 @@ sub tr_ref {
 }
 
 # Deallocate object on leaving a stack frame or when calling delete on heap
+# Need to deallocate members of a group
 sub deallocate {
-	my($id, $mem) = @_;
-	defined $objects{$mem} || die "$id: The object at memory address $mem was not defined.\n";
-	my $object = $objects{$mem};
+	my($id, $mem, $type) = @_;
+	is_defined_object($mem, $type) || die "$id: The object $type at memory address $mem was not defined.\n";
+	my $object = get_object($mem, $type);
 	$object->{'deallocated_time'} = $id;
 	$sth_insert_object->execute($object->{'id'}, $object->{'type'}, $object->{'allocated_time'}, $object->{'deallocated_time'});
-	delete $objects{$mem}; 
+	undefine_object($mem, $type);
 }
 
 # Stackframe starts
@@ -182,7 +248,8 @@ sub block_out {
 	my ($id) = @_;
 	my $objs = pop(@mem_stack);
 	foreach my $obj(keys %{$objs}) {
-		deallocate($id, $obj);
+	    my ($mem, $type) = split(/:/, $obj, 2);
+		deallocate($id, $mem, $type);
 	}
 }
 
@@ -203,7 +270,9 @@ sub main {
 	op_start($linenum, "all", "", 0);
 	block_in($linenum);
 
+    my $fileLine = 0;
 	while(my $line = <>) {
+	    $fileLine++;
 		chomp $line;
 		if($line =~ /^\[TRACER\]\t([^\t]+)\t?(.*)$/) {			
 			my $op = $1;
@@ -231,8 +300,9 @@ sub main {
 	block_out($linenum);	
 	
 	# Dump the rest of the heap
-	foreach my $mem (keys %objects) {
-		deallocate($linenum, $mem);
+	foreach my $obj (keys %objects) {
+	    my ($mem, $type) = split(/:/, $obj, 2);
+		deallocate($linenum, $mem, $type);
 	}
 	op_end($linenum, "all", "", 0);
 }
