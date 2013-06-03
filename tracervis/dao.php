@@ -3,19 +3,21 @@
 include_once "annotations.php";
 
 function dao_open() {
-    global $db, $operation_stmt, $code_ref_stmt, $io_stmt, $object_stmt, $io_for_object_stmt;
+    global $db, $operation_stmt, $code_ref_stmt, $io_stmt, $object_stmt, $io_for_object_stmt, $io_for_parent_io_stmt;
 
     $db = new SQlite3("test/test.sq3", SQLITE3_OPEN_READONLY);
     # Get operation for a given id
     $operation_stmt = $db->prepare("SELECT operation_id as id, name, parent_id, code_start_id, code_end_id, terminated_time FROM operation WHERE operation_id = :id");
     # get a reference to code by reference id
     $code_ref_stmt = $db->prepare("SELECT code_id as id, file, line FROM code WHERE code_id = :id");
-    # Get list of IOs for given operation
-    $io_stmt = $db->prepare('SELECT io_id as id, object_id, operation_id, name, value, readwrite, note, code_id FROM io where operation_id = :id ORDER BY io_id ASC');
+    # Get list of IOs for given operation (only the top-level ones)
+    $io_stmt = $db->prepare('SELECT io_id as id, io_time, object_id, operation_id, name, value, readwrite, note, code_id FROM io WHERE operation_id = :id AND parent_id = -1 ORDER BY io_time ASC');
     # Get object of given id
     $object_stmt = $db->prepare('SELECT object_id as id, type, deallocated_time FROM object where object_id = :id');
-    # All IOs for object
-    $io_for_object_stmt = $db->prepare('SELECT io_id as id, object_id, operation_id, name, value, readwrite, note, code_id FROM io where object_id = :id ORDER BY io_id ASC');
+    # All parent IOs for object
+    $io_for_object_stmt = $db->prepare('SELECT io_id as id, io_time, object_id, operation_id, name, value, readwrite, note, code_id FROM io where object_id = :id AND parent_id = -1 ORDER BY io_time ASC');
+    # All IOs for parent io
+    $io_for_parent_io_stmt = $db->prepare('SELECT io_id as id, io_time, object_id, operation_id, name, value, readwrite, note, code_id FROM io WHERE parent_id = :id ORDER BY io_id ASC');
 }
 
 function dao_close() {
@@ -49,7 +51,7 @@ function get_operation($id)
     return $result;
 }
 
-# Direct children of operation of given id. Returns
+# Direct children of operation of given id.
 function get_operation_children($id)
 {
     global $db;
@@ -93,7 +95,6 @@ function get_name_for_object($object_ios) {
     return key($names);
 }
 
-
 # List of IOs for a given operation
 function get_op_ios($id, &$result)
 {
@@ -102,7 +103,21 @@ function get_op_ios($id, &$result)
     $ios = $io_stmt->execute();
     while ($io = $ios->fetchArray()) {
         $io['op_type'] = 'io';
-        $result[$io['id']] = $io;
+        $result[$io['io_time']] = $io;
+    }
+    return $result;
+}
+
+# List child IOs for a given parent IO
+# $id - io_id of the parent io
+function get_child_io($id) {
+    global $io_for_parent_io_stmt;
+    $io_for_parent_io_stmt->db2_bind_param('id', $id);
+    $ios = $io_for_parent_io_stmt->execute();
+    $result = array();
+    while ($io = $ios->fetchArray()) {
+        $io['op_type'] = 'io';
+        $result[] = $io;
     }
     return $result;
 }

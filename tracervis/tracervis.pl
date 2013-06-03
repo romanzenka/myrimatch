@@ -7,7 +7,7 @@ use Pod::Usage;
 use DBI;
 
 
-my $file_prefix = 'c:\\poster\\myrimatch\\';
+my $file_prefix = 'C:\\Users\\m044910\\myrimatch\\';
 my $man = 0;
 my $help = 0;
 my $db = '';
@@ -43,6 +43,7 @@ my @op_stack = (); # Stack of operations
 
 my @mem_stack = (); # Stack. Each level contains an array of all object memory addresses allocated in that stack frame
 my %objects = (); # Map from MEM address -> object id
+my $object_id = 0; # Object id counter, incremented on each new object encountered
 
 sub add_code {
 	my ($id, $file, $line) = @_;
@@ -83,24 +84,76 @@ sub op_end {
 	$sth_insert_op->execute($op->{'id'}, $op->{'name'}, $op->{'parent_id'}, $op->{'code_start_id'}, $op->{'code_end_id'}, $op->{'terminated_time'}) || die "Couldn't insert operation: ".$dbh->errstr;
 }
 
+# Return id of the IO which accessed the object
+sub add_object {
+	my ($id, $name, $heap, $operation, $note, $code, $mem, $type, $value, $parent_io, $parent_relation) = @_;
+
+    my $obj;
+    if(defined $objects{$mem}) {
+        $obj = $objects{$mem};
+    } else {
+        $object_id++;
+        $obj = { 'id' => $object_id, 'allocated_time' => $id, 'type' => $type };
+        $objects{$mem} = $obj;
+        if($heap eq '2') {
+            # Stack: This object will get deallocated when leaving this stack frame
+            $mem_stack[-1]{$mem} = 1;
+        }
+    }
+    $sth_insert_io->execute($id, $obj->{'id'}, $op_stack[-1]->{'id'}, $name, $value, $operation, $note, $code, $parent_io, $parent_relation) || die "Couldn't add io: " . $dbh->errstr;
+    return $dbh->last_insert_id("","","","");
+}
+
+# Parse a serialized object into all sub-objects
+# Returns offset in the serialization array with first unparsed element
+sub parse_obj {
+	my ($id, $name, $heap, $operation, $note, $code, $parent_io, $parent_relation, $offset, $serialization_ref) = @_;
+    my @serialization = @{$serialization_ref};
+    if(scalar @serialization == 0) { return -1; }
+    if((scalar @serialization)<=$offset) {
+        print STDERR "offset problem $offset : " . join(' ', @serialization) . "\n";
+    }
+    my $lookup = $serialization[$offset++];
+
+    if($lookup eq '.') { # Literal
+        my $mem = $serialization[$offset++];
+        my $type = $serialization[$offset++];
+        my $value = $serialization[$offset++];
+        add_object($id, $name, $heap, $operation, $note, $code, $mem, $type, $value, $parent_io, $parent_relation);
+    } elsif($lookup eq '[') { # Array or structure
+        my $mem = $serialization[$offset++];
+        my $type = $serialization[$offset++];
+        my $arr_io = add_object($id, $name, $heap, $operation, $note, $code, $mem, $type, '', $parent_io, $parent_relation);
+        while($serialization[$offset] ne ']') {
+            my $member = $serialization[$offset++];
+            $offset = parse_obj($id, $name, $heap, $operation, $note, $code, $arr_io, $member, $offset, $serialization_ref);
+        }
+        $offset++; # Eat up the closing bracket
+    } elsif($lookup eq '{') {
+        my $mem = $serialization[$offset++];
+        my $type = $serialization[$offset++];
+
+        my $map_io = add_object($id, $name, $heap, $operation, $note, $code, $mem, $type, '', $parent_io, $parent_relation);
+        my $i=0;
+        while($serialization[$offset] ne '}') {
+            $offset = parse_obj($id, $name, $heap, $operation, $note, $code, $map_io, "$i key", $offset, $serialization_ref);
+            $offset = parse_obj($id, $name, $heap, $operation, $note, $code, $map_io, "$i value", $offset, $serialization_ref);
+            $i++;
+        }
+        $offset++; # Eat up the closing brace
+    }
+    return $offset;
+}
+
 sub tr_dump {
-	my ($id, $mem, $name, $heap, $operation, $note, $file, $line, $type, $value) = @_;
+	my ($id, $name, $heap, $operation, $note, $file, $line, @serialization) = @_;
 	# $heap - 1-heap, 2-stack
 	# $operation - 1-read, 2-write, 3-note
 
 	my $code = add_code($id, $file, $line);
-	my $obj;
-	if(defined $objects{$mem}) {
-		$obj = $objects{$mem};
-	} else {
-		$obj = { 'id' => $id, 'type' => $type };
-		$objects{$mem} = $obj;
-		if($heap eq '2') {
-			# Stack: This object will get deallocated when leaving this stack frame
-			$mem_stack[-1]{$mem} = 1;
-		}
-	}
-	$sth_insert_io->execute($id, $obj->{'id'}, $op_stack[-1]->{'id'}, $name, $value, $operation, $note, $code) || die "Couldn't add io: " . $dbh->errstr;
+
+           # ($id, $name, $heap, $operation, $note, $code, $parent_id, $parent_relation, $offset, $serialization_ref)
+	parse_obj($id, $name, $heap, $operation, $note, $code, -1,         '',               0,       \@serialization);
 }
 
 sub tr_ref {
@@ -113,7 +166,7 @@ sub deallocate {
 	defined $objects{$mem} || die "$id: The object at memory address $mem was not defined.\n";
 	my $object = $objects{$mem};
 	$object->{'deallocated_time'} = $id;
-	$sth_insert_object->execute($object->{'id'}, $object->{'type'}, $object->{'deallocated_time'});
+	$sth_insert_object->execute($object->{'id'}, $object->{'type'}, $object->{'allocated_time'}, $object->{'deallocated_time'});
 	delete $objects{$mem}; 
 }
 
@@ -140,10 +193,10 @@ sub main {
 	$sth_insert_op = $dbh->prepare("INSERT INTO operation (operation_id, name, parent_id, code_start_id, code_end_id, terminated_time) VALUES (?, ?, ?, ?, ?, ?)") || die "Couldn't prepare statement: " . $dbh->error;
 	$dbh->do( "CREATE TABLE IF NOT EXISTS code (code_id INTEGER PRIMARY KEY, file TEXT, line INTEGER)" ) || die "Couldn't create table: ". $dbh->errstr;
 	$sth_insert_code = $dbh->prepare("INSERT INTO code (code_id, file, line) VALUES (?, ?, ?)") || die "Couldn't prepare statement: " . $dbh->errstr;
-	$dbh->do("CREATE TABLE IF NOT EXISTS object (object_id INTEGER PRIMARY KEY, type TEXT, deallocated_time INTEGER)") || die "Couldn't prepare statement: " . $dbh->error;
-	$sth_insert_object = $dbh->prepare("INSERT INTO object (object_id, type, deallocated_time) VALUES (?, ?, ?)") || die "Couldn't prepare statement: " . $dbh->errstr;
-	$dbh->do("CREATE TABLE IF NOT EXISTS io (io_id INTEGER PRIMARY KEY, object_id INTEGER, operation_id INTEGER, name TEXT, value TEXT, readwrite INTEGER, note TEXT, code_id INTEGER)") || die "Couldn't prepare statement: " . $dbh->error;
-	$sth_insert_io = $dbh->prepare("INSERT INTO io (io_id, object_id, operation_id, name, value, readwrite, note, code_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)") || die "Couldn't prepare statement: " . $dbh->errstr;
+	$dbh->do("CREATE TABLE IF NOT EXISTS object (object_id INTEGER PRIMARY KEY, type TEXT, allocated_time INTEGER, deallocated_time INTEGER)") || die "Couldn't prepare statement: " . $dbh->error;
+	$sth_insert_object = $dbh->prepare("INSERT INTO object (object_id, type, allocated_time, deallocated_time) VALUES (?, ?, ?, ?)") || die "Couldn't prepare statement: " . $dbh->errstr;
+	$dbh->do("CREATE TABLE IF NOT EXISTS io (io_id INTEGER PRIMARY KEY AUTOINCREMENT, io_time INTEGER, object_id INTEGER, operation_id INTEGER, name TEXT, value TEXT, readwrite INTEGER, note TEXT, code_id INTEGER, parent_id INTEGER, parent_relation TEXT)") || die "Couldn't prepare statement: " . $dbh->error;
+	$sth_insert_io = $dbh->prepare("INSERT INTO io (io_time, object_id, operation_id, name, value, readwrite, note, code_id, parent_id, parent_relation) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)") || die "Couldn't prepare statement: " . $dbh->errstr;
 
 	my $linenum=0;
 
