@@ -42,6 +42,7 @@ namespace freicore {
     struct BaseSpectrum;
 	struct PrecursorMassHypothesis;
 	enum MassType;
+	struct FragmentTypesBitset;
     namespace myrimatch {
         struct Spectrum;
         struct PeakInfo;
@@ -81,6 +82,7 @@ void tracer_dump(const vector<freicore::PrecursorMassHypothesis> *x);
 void tracer_dump(const pwiz::chemistry::MZTolerance *x);
 void tracer_dump(const freicore::MassType * x);
 void tracer_dump(const freicore::myrimatch::MzToleranceRule * x);
+void tracer_dump(const freicore::FragmentTypesBitset *x);
 
 void tracer_dump(const PeakSpectrumData * x);
 
@@ -88,24 +90,24 @@ const char * tracer_id(const freicore::myrimatch::Spectrum * x);
 const char * tracer_id(const freicore::BaseSpectrum * x);
 const char * tracer_id(void *ptr);
 
-#define TRACER(variable, operation, heap, note) { cout << "[TRACER]" << '\t' << "dump" << '\t' << #variable << '\t' << heap << '\t' << operation << '\t' << note << '\t' << __FILE__ << '\t' << __LINE__ << '\t'; tracer_dump(&(variable)); cout << '\n'; }
-#define TRACER_P(variable, type, representation, operation, heap, note) { cout << "[TRACER]" << '\t' << "dump" << '\t' << #variable << '\t' << heap << '\t' << operation << '\t' << note << '\t' << __FILE__ << '\t' << __LINE__ << '\t' << '.' << '\t' << &(variable) << '\t' << type << '\t' << representation << '\n'; }
+#define TRACER(variable, operation, heap, note) { cout << flush << "[TRACER]" << '\t' << "dump" << '\t' << #variable << '\t' << heap << '\t' << operation << '\t' << note << '\t' << __FILE__ << '\t' << __LINE__ << '\t'; tracer_dump(&(variable)); cout << flush << '\n'; }
+#define TRACER_P(variable, type, representation, operation, heap, note) { cout << flush << "[TRACER]" << '\t' << "dump" << '\t' << #variable << '\t' << heap << '\t' << operation << '\t' << note << '\t' << __FILE__ << '\t' << __LINE__ << '\t' << '.' << '\t' << &(variable) << '\t' << type << '\t' << representation << flush << '\n'; }
 // Reference a variable in an operation, do not dump all its info
-#define TRACER_REF(variable, operation, heap, note) { cout << "[TRACER]" << '\t' << "ref" << '\t' << &(variable) << '\t' << #variable << '\t' << heap << '\t' << operation << '\t' << note << '\t' << __FILE__ << '\t' << __LINE__ << '\n'; }
-#define TRACER_UNLINK(variable) { cout << "[TRACER]" << '\t' << "unlink" << '\t' << &(variable) << '\t' << #variable << '\t' __FILE__ << '\t' << __LINE__ << '\n'; }
+#define TRACER_REF(variable, operation, heap, note) { cout << flush << "[TRACER]" << '\t' << "ref" << '\t' << &(variable) << '\t' << #variable << '\t' << heap << '\t' << operation << '\t' << note << '\t' << __FILE__ << '\t' << __LINE__ << flush << '\n'; }
+#define TRACER_UNLINK(variable) { cout << flush << "[TRACER]" << '\t' << "unlink" << '\t' << &(variable) << '\t' << #variable << '\t' __FILE__ << '\t' << __LINE__ << flush << '\n'; }
 
 // Start operation of a given name
-#define TRACER_OP_START(name) { cout << "[TRACER]" << '\t' << "op_start" << '\t' << name << '\t' << __FILE__ << '\t' << __LINE__ << '\n'; }
+#define TRACER_OP_START(name) { cout << flush << "[TRACER]" << '\t' << "op_start" << '\t' << name << '\t' << __FILE__ << '\t' << __LINE__ << flush << '\n'; }
 // End operation of a given name
-#define TRACER_OP_END(name) { cout << "[TRACER]" << '\t' <<  "op_end" << '\t' << name << '\t' << __FILE__ << '\t' << __LINE__ << '\n'; }
+#define TRACER_OP_END(name) { cout << flush << "[TRACER]" << '\t' <<  "op_end" << '\t' << name << '\t' << __FILE__ << '\t' << __LINE__ << flush << '\n'; }
 
 #define TRACER_METHOD_START(name) { TRACER_BI; TRACER_OP_START(name); TRACER(*this, READ, HEAP, tracer_id(this)); }
 #define TRACER_METHOD_END(name) { TRACER_OP_END(name); TRACER_BO; }
 
 #define TRACER_S2S(variable) lexical_cast<string>(variable)
 // Defines scope of stack variables
-#define TRACER_BI { cout << "[TRACER]" << '\t' << "block_in" << '\n'; }
-#define TRACER_BO { cout << "[TRACER]" << '\t' << "block_out" << '\n'; }
+#define TRACER_BI { cout << flush << "[TRACER]" << '\t' << "block_in" << '\n'; }
+#define TRACER_BO { cout << flush << "[TRACER]" << '\t' << "block_out" << '\n'; }
 
 #else // !TRACER_ENABLED
 

@@ -257,7 +257,7 @@ namespace myrimatch
                     }
                 } else
                     m_warnings << "Invalid mode \"" << mode << "\" for FragmentationRule.\n";
-            } TRACER_P(defaultFragmentTypes, "freicore::FragmentTypesBitset", (defaultFragmentTypes[FragmentType_A]?string(" a"):string())+(defaultFragmentTypes[FragmentType_B]?string(" b"):string())+(defaultFragmentTypes[FragmentType_C]?string(" c"):string())+(defaultFragmentTypes[FragmentType_X]?string(" x"):string())+(defaultFragmentTypes[FragmentType_Y]?string(" y"):string())+(defaultFragmentTypes[FragmentType_Z]?string(" z"):string())+(defaultFragmentTypes[FragmentType_Z_Radical]?string(" z*"):string()), WRITE, HEAP, "Supported fragment types"); TRACER_OP_END("Parse fragmentation rule");
+            } TRACER(defaultFragmentTypes, WRITE, HEAP, "Supported fragment types"); TRACER_OP_END("Parse fragmentation rule");
 			TRACER(EstimateSearchTimeOnly, READ, HEAP, "Only estimate search time");
             if( ProteinSamplingTime == 0 )
             {
@@ -276,7 +276,7 @@ namespace myrimatch
                 precursorMzToleranceRule = MzToleranceRule_Avg;
             else
                 m_warnings << "Invalid mode \"" << PrecursorMzToleranceRule << "\" for PrecursorMzToleranceRule.\n";
-			TRACER_P(precursorMzToleranceRule, "freicore::myrimatch::MzToleranceRule", lexical_cast<string>(precursorMzToleranceRule), WRITE, HEAP, "Parsed precursor tolerance rule (0-auto, 1-monoisotopic mass, 2-average mass)");
+			TRACER_P(precursorMzToleranceRule, "freicore::myrimatch::MzToleranceRule", lexical_cast<string>(precursorMzToleranceRule), WRITE, HEAP, "Parsed precursor tolerance rule");
             if (MonoisotopeAdjustmentSet.size() > 1 && (1000.0 + MonoPrecursorMzTolerance) - 1000.0 > 0.2)
                 m_warnings << "MonoisotopeAdjustmentSet should be set to 0 when the MonoPrecursorMzTolerance is wide.\n";
 

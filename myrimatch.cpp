@@ -159,8 +159,8 @@ namespace myrimatch
 				}
 			}
 		}  
-		TRACER(args, WRITE, HEAP, "Cleaned up argument list"); TRACER_OP_END("Override arguments using a list of variables");
-		g_rtConfig->setVariables( vars );
+		TRACER(vars, WRITE, STACK, "Variable map"); TRACER(args, WRITE, HEAP, "Cleaned up argument list"); TRACER_OP_END("Override arguments using a list of variables");
+		g_rtConfig->setVariables( vars ); 
 
 		if( g_pid == 0 )
 		{
@@ -663,7 +663,7 @@ namespace myrimatch
 	}
 
 	void ExecuteSearch()
-	{
+	{	TRACER(g_numWorkers, READ, HEAP, "Number of workers"); 
 		size_t numProcessors = (size_t) g_numWorkers;
         boost::uint32_t numProteins = (boost::uint32_t) proteins.size();
 

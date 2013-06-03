@@ -449,7 +449,7 @@ namespace freicore
 
 		operator string () { return _id; }
 
-    private:
+    public: /* ROMAN */
         string _id;
         typedef boost::variant<int, string> IdVariantType;
         vector<IdVariantType> _pieces;
