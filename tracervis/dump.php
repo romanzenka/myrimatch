@@ -6,7 +6,7 @@
 <link href="css/tracervis.css" rel="stylesheet" media="screen">
 
 <body>
-<div class="container" style="margin-top: 1em">
+<div style="margin: 1em 0.5em">
 <?php
 include_once "dao.php";
 include_once "render.php";
