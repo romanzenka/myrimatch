@@ -12,6 +12,9 @@ function parse_vector($vector) {
 
 // A vector of numbers
 function vis_vector($vector, $id, $prev_vector='') {
+    $width = 1324;
+    $height = 80;
+
     $values = parse_vector($vector);
     $prev_values = null;
     $prev = false;
@@ -21,10 +24,12 @@ function vis_vector($vector, $id, $prev_vector='') {
             $prev = true;
         }
     }
-    $maxval = max($values);
+    $maxval = max(0, max($values));
+    $minval = min(0, min($values));
+    $valspan = $maxval - $minval;
+    $zeroHeight = $height * $maxval / $valspan;
+
     $num = count($values);
-    $width = 2048;
-    $height = 80;
     $bar_width = $width/$num;
     ob_start();
 ?>
@@ -36,12 +41,34 @@ function vis_vector($vector, $id, $prev_vector='') {
         var ctx = canvas.getContext('2d');
         ctx.fillStyle = "#eeeeee";
         ctx.fillRect(0, 0, <?php echo $width; ?>, <?php echo $height; ?>);
-        ctx.fillStyle = '#000000';
+
+        ctx.fillStyle = '#dddddd';
+
 <?php
     if($maxval > 0) {
         foreach($values as $x => $y) {
             $xpos = $width * $x / $num;
-            $h = $height * $y / $maxval;
+            $h = $height * $y * 100.0 / $valspan;
+            if($prev) {
+                $prev_value = $prev_values[$x];
+                if($y==$prev_value) {
+                    echo 'ctx.fillStyle = \'#dddddd\';';
+                } else {
+                    echo 'ctx.fillStyle = \'#ddddee\';';
+                }
+            }
+            echo "ctx.fillRect($xpos, ".($zeroHeight-$h).", $bar_width, $h);";
+        }
+    }
+?>
+
+        ctx.fillStyle = '#000000';
+
+<?php
+    if($maxval > 0) {
+        foreach($values as $x => $y) {
+            $xpos = $width * $x / $num;
+            $h = $height * $y / $valspan;
             if($prev) {
                 $prev_value = $prev_values[$x];
                 if($y==$prev_value) {
@@ -50,15 +77,25 @@ function vis_vector($vector, $id, $prev_vector='') {
                     echo 'ctx.fillStyle = \'#0000dd\';';
                 }
             }
-            if($h>=0) {
-                echo "ctx.fillRect($xpos, ".($height-$h).", $bar_width, $h);";
-            } else {
-                $neg_h = -$h;
-                echo "ctx.fillRect($xpos, 0, $bar_width, $neg_h);";
-            }
+            echo "ctx.fillRect($xpos, ".($zeroHeight-$h).", $bar_width, $h);";
         }
     }
 ?>
+        ctx.fillStyle = "#888888";
+        ctx.textAlign = "left";
+        ctx.textBaseline = "top";
+        ctx.font = "normal 10px Arial";
+        ctx.fillText("< <?php echo 0 ?>", 0, 11);
+        ctx.textAlign = "center";
+        ctx.fillStyle = "#888888";
+        ctx.fillText("^ <?php echo $maxval ?>", <?php echo $width/2 ?>, 0);
+        ctx.textAlign = "right";
+        ctx.fillText("<?php echo count($values) ?> >", <?php echo $width ?>, 11);
+        ctx.textAlign = "center";
+        ctx.textBaseline = "bottom";
+        ctx.fillText("<?php echo $minval ?> v", <?php echo $width/2 ?>, <?php echo $height ?>);
+
+
     </script>
 <?php
 
@@ -103,7 +140,7 @@ function vis_spectrum($data, $id, $prevData='') {
         $minX = min($minX, min($mzs2));
         $maxX = max($maxX, max($mzs2));
     }
-    $width = 2048;
+    $width = 1324;
     $height = 80;
     $bar_width = 1.0;
     ob_start();
