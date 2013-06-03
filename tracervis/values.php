@@ -10,15 +10,38 @@ function parse_vector($vector) {
     return $values;
 }
 
+function dtto() {
+    return "<i class=\"icon-hand-up\" title=\"value unchanged from previous occurence\"></i>";
+}
+
+function vis_value($value, $prev_value, &$allSame) {
+    $result = '';
+    if($value === $prev_value) {
+        $result .= dtto();
+    } else {
+        $result .= '<pre>' . stripcslashes($value) . '</pre>';
+        $allSame = false;
+    }
+    return $result;
+}
+
+function vis_enum($value, $prev_value, $values, &$allSame) {
+    return vis_value($values[$value], $prev_value!==null ? $values[$prev_value] : '', $allSame);
+}
+
 // A vector of numbers
-function vis_vector($vector, $id, $prev_vector='') {
-    $width = 1324;
+function vis_vector($vector, $id, $prev_vector='', &$allSame) {
+    if($vector === $prev_vector) {
+        return dtto();
+    }
+    $allSame = false;
+    $width = 824;
     $height = 80;
 
     $values = parse_vector($vector);
     $prev_values = null;
     $prev = false;
-    if($prev_vector != '') {
+    if($prev_vector !== '' && $prev_vector!= null) {
         $prev_values = parse_vector($prev_vector);
         if(count($prev_values)==count($values)) {
             $prev = true;
@@ -120,7 +143,12 @@ function parse_spectrum($data) {
     return $result;
 }
 
-function vis_spectrum($data, $id, $prevData='') {
+function vis_spectrum($data, $id, $prevData='', &$allSame) {
+    if($data === $prevData) {
+        return dtto();
+    }
+    $allSame = false;
+
     $mzsInts = parse_spectrum($data);
     $mzs = $mzsInts[0];
     $ints = $mzsInts[1];
@@ -139,7 +167,7 @@ function vis_spectrum($data, $id, $prevData='') {
         $minX = min($minX, min($mzs2));
         $maxX = max($maxX, max($mzs2));
     }
-    $width = 1324;
+    $width = 824;
     $height = 80;
     $bar_width = 1.0;
     ob_start();

@@ -4,6 +4,9 @@ include_once "values.php";
 
 # Code for rendering objects into HTML
 
+# An array from objId to previous io for an object.
+$prev_ios = array();
+
 #### Code links ####
 
 # Link to a line in code
@@ -75,50 +78,91 @@ function endsWith($haystack, $needle)
 }
 
 # Render a value
-function render_value($value, $id, $type, $prev_value='') {
+function render_value($io, $io_obj, &$allSame) {
+    global $prev_ios;
+
+    $id = $io['id'];
+    $type = $io_obj['type'];
+    $value = $io['value'];
+    $prev_value = null;
+    if (array_key_exists($io_obj['id'], $prev_ios)) {
+        $prev_value = $prev_ios[$io_obj['id']];
+    }
     $result = '';
     if($type == 'std::vector<float>') {
-        $result .= vis_vector($value, $id, $prev_value);
+        $result .= vis_vector($value, $id, $prev_value, $allSame);
     } else if($type == 'freicore::PeakPreData') {
-        $result .= vis_spectrum($value, $id, $prev_value);
+        $result .= vis_spectrum($value, $id, $prev_value, $allSame);
     } else if($type == 'freicore::myrimatch::Spectrum::PeakData') {
-        $result .= vis_spectrum($value, $id, $prev_value);
+        $result .= vis_spectrum($value, $id, $prev_value, $allSame);
+    } else if($type == 'FragmentTypes') {
+        $fragments = 'abcxyzZ';
+        $result .= '<pre>' . substr($fragments, intval($value), 1) . '</pre>';
+    } else if($type == 'freicore::myrimatch::MzToleranceRule') {
+        $result .= vis_enum($value, $prev_value, array('0'=>'auto', '1'=>'monoisotopic', '2'=>'average'), $allSame);
     } else if(startsWith($type, 'std::map<')) {
         $ios = get_child_ios($id);
-        $result .= '<table>';
-        foreach($ios as $io) {
-            if(endsWith($io['parent_relation'], 'key')) {
-              $result .= '<tr>';
+
+        $childrenSame = true;
+        $result2 = '';
+        $result2 .= '<table>';
+        foreach($ios as $cio) {
+            if(endsWith($cio['parent_relation'], 'key')) {
+              $result2 .= '<tr>';
             }
-            $result .= '<td>';
-            $object = get_object($io['object_id']);
-            $result .= get_object_link($object, '&gt;', $io['operation_id'] );
-            $result .= '</td><td>';
-            $result .= render_value($io['value'], $io['id'], $io['type']);
-            $result .= '</td>';
-            if(endsWith($io['parent_relation'], 'value')) {
-              $result .= '</tr>';
+            $result2 .= '<td>';
+            $object = get_object($cio['object_id']);
+            $result2 .= get_object_link($object, '&gt;', $cio['operation_id'] );
+            $result2 .= '</td><td>';
+            $result2 .= render_value($cio, $object, $childrenSame);
+            $result2 .= '</td>';
+            if(endsWith($cio['parent_relation'], 'value')) {
+              $result2 .= '</tr>';
             }
         }
-        $result .= '</table>';
-    } else if($value != '') {
-        $result .= '<pre>' . stripcslashes($value) . '</pre>';
+        $result2 .= '</table>';
+        if($childrenSame) {
+            $result = dtto();
+        } else {
+            $allSame = false;
+            $result = $result2;
+        }
+
     } else {
         $ios = get_child_ios($id);
-        $result .= '<table>';
-        foreach($ios as $io) {
-            $object = get_object($io['object_id']);
-            $result .= '<tr>';
-            $result .= '<td>';
-            $result .= get_object_link($object, $io['parent_relation'], $io['operation_id']);
-            $result .= '</td>';
-            $result .= '<td>';
-            $result .= render_value($io['value'], $io['id'], $io['type']);
-            $result .= '</td>';
-            $result .= '</tr>';
+        if(count($ios)==0) {
+            $result = vis_value($value, $prev_value, $allSame);
+        } else {
+            $childrenSame = true;
+            $result2 = '';
+            $result2 .= '<table>';
+            foreach($ios as $cio) {
+                $childSame = true;
+                $object = get_object($cio['object_id']);
+                $result3 = '';
+                $result3 .= '<tr>';
+                $result3 .= '<td>';
+                $result3 .= get_object_link($object, $cio['parent_relation'], $cio['operation_id']);
+                $result3 .= '</td>';
+                $result3 .= '<td>';
+                $result3 .= render_value($cio, $object, $childSame);
+                $result3 .= '</td>';
+                $result3 .= '</tr>';
+                $childrenSame = $childrenSame && $childSame;
+                if(!$childSame) {
+                    $result2 .= $result3;
+                }
+            }
+            $result2 .= '</table>';
+            if($childrenSame) {
+                $result = dtto();
+            } else {
+                $allSame = false;
+                $result = $result2;
+            }
         }
-        $result .= '</table>';
     }
+    $prev_ios[$io_obj['id']] = $value;
     return $result;
 }
 
@@ -127,8 +171,7 @@ function render_value($value, $id, $type, $prev_value='') {
 # $r - loaded IO object
 # $reference - link to the object details when 'object', link to the operation details when 'operation'
 # $variable_name - override for the variable name, when '', no override
-# $prev_r - a previous IO referring to the same object (to highlight differences), or '' when none available
-function render_io($r, $reference = 'object', $variable_name='', $prev_r=null) {
+function render_io($r, $reference = 'object', $variable_name='') {
     $result = '';
     # Arrow for read/write/view
     switch ($r['readwrite']) {
@@ -155,8 +198,8 @@ function render_io($r, $reference = 'object', $variable_name='', $prev_r=null) {
     }
     $result .= '</td><td>';
 
-    $previous_value = $prev_r ? $prev_r['value'] : '';
-    $result .= render_value($r['value'], $r['id'], $object['type'], $previous_value);
+    $allSame = true;
+    $result .= render_value($r, $object, $allSame);
 
     $result .= '</td><td>';
     $result .= render_code_link($r['code_id'], $r['name']);
@@ -186,7 +229,6 @@ function render_operation($id, $highlight_object_id)
     get_op_children($id, $result);
     ksort($result);
     echo "<table class=\"table table-condensed\">";
-    $prevValues = array();
     foreach ($result as $r) {
         $objId = $r['object_id'];
         if($r['op_type']=='io' && $objId==$highlight_object_id) {
@@ -199,16 +241,34 @@ function render_operation($id, $highlight_object_id)
             echo '<td><i class="icon-chevron-right"></i></td> ' .
                 '<td colspan="4">' . get_operation_link($r, -1) . '</td>';
         } else if ($r['op_type'] == 'io') {
-            $prevValue = '';
-            if(array_key_exists($objId, $prevValues)) {
-                $prevValue = $prevValues[$objId];
-            }
-            echo render_io($r, 'object', '', $prevValue);
-            $prevValues[$objId] = $r;
+            echo render_io($r, 'object', '');
         }
         echo "</tr>";
     }
     echo "</table>";
+}
+
+function render_object($object_id, $operation_id) {
+    $object = get_object($object_id);
+    $ios = get_io_for_object($object_id);
+    $name = get_name_for_object($ios);
+
+    echo '<h2><span style="color: #ddd">' . htmlspecialchars($object['type']) . '</span> ' . htmlspecialchars($name) . '</h2>';
+
+    echo '<table class="table table-condensed">';
+    $prev_io = null;
+    foreach($ios as $io) {
+        if($io['operation_id'] == $operation_id) {
+            echo "<tr class=\"highlight\">";
+        } else {
+            echo "<tr>";
+        }
+        echo '<td>'.$io['id'].'</td>';
+        echo render_io($io, 'operation', $name, $prev_io);
+        echo "</tr>";
+        $prev_io = $io;
+    }
+    echo '</table>';
 }
 
 #### Objects ####
