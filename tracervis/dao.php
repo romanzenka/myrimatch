@@ -15,9 +15,9 @@ function dao_open() {
     # Get object of given id
     $object_stmt = $db->prepare('SELECT object_id as id, type, deallocated_time FROM object where object_id = :id');
     # All parent IOs for object
-    $io_for_object_stmt = $db->prepare('SELECT io_id as id, io_time, object_id, operation_id, name, value, readwrite, note, code_id FROM io where object_id = :id AND parent_id = -1 ORDER BY io_time ASC');
+    $io_for_object_stmt = $db->prepare('SELECT io_id as id, io_time, object_id, operation_id, name, value, readwrite, note, code_id FROM io where object_id = :id ORDER BY io_time ASC');
     # All IOs for parent io
-    $io_for_parent_io_stmt = $db->prepare('SELECT io_id as id, io_time, object_id, operation_id, name, value, readwrite, note, code_id FROM io WHERE parent_id = :id ORDER BY io_id ASC');
+    $io_for_parent_io_stmt = $db->prepare('SELECT io_id as id, io_time, object_id, operation_id, name, value, readwrite, note, code_id, parent_id, parent_relation FROM io WHERE parent_id = :id ORDER BY io_id ASC');
 }
 
 function dao_close() {
@@ -110,9 +110,9 @@ function get_op_ios($id, &$result)
 
 # List child IOs for a given parent IO
 # $id - io_id of the parent io
-function get_child_io($id) {
+function get_child_ios($id) {
     global $io_for_parent_io_stmt;
-    $io_for_parent_io_stmt->db2_bind_param('id', $id);
+    $io_for_parent_io_stmt->bindParam('id', $id);
     $ios = $io_for_parent_io_stmt->execute();
     $result = array();
     while ($io = $ios->fetchArray()) {

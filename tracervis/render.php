@@ -59,6 +59,21 @@ function render_code_link($code_id, $code='') {
     return '<a href="' . get_code_url($code_id, $code) . '" title="'.$code.'"><i class="icon-tasks"></i></a>';
 }
 
+function startsWith($haystack, $needle)
+{
+    return !strncmp($haystack, $needle, strlen($needle));
+}
+
+function endsWith($haystack, $needle)
+{
+    $length = strlen($needle);
+    if ($length == 0) {
+        return true;
+    }
+
+    return (substr($haystack, -$length) === $needle);
+}
+
 # Render a value
 function render_value($value, $id, $type, $prev_value='') {
     $result = '';
@@ -68,8 +83,41 @@ function render_value($value, $id, $type, $prev_value='') {
         $result .= vis_spectrum($value, $id, $prev_value);
     } else if($type == 'freicore::myrimatch::Spectrum::PeakData') {
         $result .= vis_spectrum($value, $id, $prev_value);
+    } else if(startsWith($type, 'std::map<')) {
+        $ios = get_child_ios($id);
+        $result .= '<table>';
+        foreach($ios as $io) {
+            if(endsWith($io['parent_relation'], 'key')) {
+              $result .= '<tr>';
+            }
+            $result .= '<td>';
+            $object = get_object($io['object_id']);
+            $result .= get_object_link($object, '&gt;', $io['operation_id'] );
+            $result .= '</td><td>';
+            $result .= render_value($io['value'], $io['id'], $io['type']);
+            $result .= '</td>';
+            if(endsWith($io['parent_relation'], 'value')) {
+              $result .= '</tr>';
+            }
+        }
+        $result .= '</table>';
+    } else if($value != '') {
+        $result .= '<pre>' . stripcslashes($value) . '</pre>';
     } else {
-        $result .=  '<pre>' . stripcslashes($value) . '</pre>';
+        $ios = get_child_ios($id);
+        $result .= '<table>';
+        foreach($ios as $io) {
+            $object = get_object($io['object_id']);
+            $result .= '<tr>';
+            $result .= '<td>';
+            $result .= get_object_link($object, $io['parent_relation'], $io['operation_id']);
+            $result .= '</td>';
+            $result .= '<td>';
+            $result .= render_value($io['value'], $io['id'], $io['type']);
+            $result .= '</td>';
+            $result .= '</tr>';
+        }
+        $result .= '</table>';
     }
     return $result;
 }
@@ -106,10 +154,10 @@ function render_io($r, $reference = 'object', $variable_name='', $prev_r=null) {
         $result .=  get_operation_link(get_operation($r['operation_id']), $r['object_id']);
     }
     $result .= '</td><td>';
-    if ($r['value'] != '') {
-        $previous_value = $prev_r ? $prev_r['value'] : '';
-        $result .= render_value($r['value'], $r['id'], $object['type'], $previous_value);
-    }
+
+    $previous_value = $prev_r ? $prev_r['value'] : '';
+    $result .= render_value($r['value'], $r['id'], $object['type'], $previous_value);
+
     $result .= '</td><td>';
     $result .= render_code_link($r['code_id'], $r['name']);
     $result .=  '</td>';

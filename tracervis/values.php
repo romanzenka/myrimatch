@@ -95,7 +95,6 @@ function vis_vector($vector, $id, $prev_vector='') {
         ctx.textBaseline = "bottom";
         ctx.fillText("<?php echo $minval ?> v", <?php echo $width/2 ?>, <?php echo $height ?>);
 
-
     </script>
 <?php
 
