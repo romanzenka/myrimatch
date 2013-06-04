@@ -136,6 +136,8 @@ function render_value($io, $io_obj, &$allSame) {
             $childrenSame = true;
             $result2 = '';
             $result2 .= '<table>';
+            $dttomode = false;
+            $dttonames = '';
             foreach($ios as $cio) {
                 $childSame = true;
                 $object = get_object($cio['object_id']);
@@ -150,7 +152,15 @@ function render_value($io, $io_obj, &$allSame) {
                 $result3 .= '</tr>';
                 $childrenSame = $childrenSame && $childSame;
                 if(!$childSame) {
+                    if($dttomode) {
+                        $result2 .= "<tr><td title=\"These members are unchanged: $dttonames\">&#x22ee;</td><td></td></tr>";
+                        $dttomode = false;
+                        $dttonames = '';
+                    }
                     $result2 .= $result3;
+                } else {
+                    $dttomode = true;
+                    $dttonames .= " " .htmlentities($cio['parent_relation']);
                 }
             }
             $result2 .= '</table>';
