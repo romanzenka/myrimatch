@@ -85,6 +85,7 @@
     <ClCompile Include="freicore\mapPeptidesToFasta.cpp" />
     <ClCompile Include="freicore\percentile_test.cpp" />
     <ClCompile Include="freicore\proteinStore.cpp" />
+    <ClCompile Include="freicore\pwiz_src\pwiz\utility\chemistry\MZTolerance.cpp" />
     <ClCompile Include="freicore\SearchResultSetTest.cpp" />
     <ClCompile Include="freicore\SearchSpectrum.cpp" />
     <ClCompile Include="freicore\SharedTests.cpp" />
@@ -122,6 +123,7 @@
     <ClInclude Include="freicore\Profiler.h" />
     <ClInclude Include="freicore\proteinStore.h" />
     <ClInclude Include="freicore\PTMVariantList.h" />
+    <ClInclude Include="freicore\pwiz_src\pwiz\utility\chemistry\mztolerance.hpp" />
     <ClInclude Include="freicore\ResidueMap.h" />
     <ClInclude Include="freicore\searchResult.h" />
     <ClInclude Include="freicore\SearchResultSet.h" />

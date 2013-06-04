@@ -104,6 +104,9 @@
     <ClCompile Include="tracer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="freicore\pwiz_src\pwiz\utility\chemistry\MZTolerance.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="myrimatch.h">
@@ -230,6 +233,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="tracer.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="freicore\pwiz_src\pwiz\utility\chemistry\mztolerance.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
