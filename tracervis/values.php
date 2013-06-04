@@ -11,7 +11,7 @@ function parse_vector($vector) {
 }
 
 function dtto() {
-    return "<i class=\"icon-hand-up\" title=\"value unchanged from previous occurence\"></i>";
+    return "&#x22ee;";
 }
 
 function vis_value($value, $prev_value, &$allSame) {
