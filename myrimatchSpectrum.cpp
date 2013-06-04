@@ -390,7 +390,7 @@ namespace myrimatch
                 double rawXCorr = 0.0; 
                 for(int index = 0; index < peakDataLength; ++index)
                     rawXCorr += peakDataForXCorr[index] * theoreticalSpectrum[index];
-                TRACER(rawXCorr, WRITE, STACK, "raw xcorr"); (const_cast<Spectrum::SearchResultType&>(result)).XCorr = (rawXCorr / 1e4); TRACER((const_cast<Spectrum::SearchResultType&>(result)).XCorr, WRITE, HEAP, "search result xcorr"); TRACER_OP_END("compute dot product of theoretical spectrum and binned peaks"); 
+                TRACER(rawXCorr, WRITE, STACK, "raw xcorr"); double &XCorrRef = (const_cast<Spectrum::SearchResultType&>(result)).XCorr; XCorrRef = (rawXCorr / 1e4); TRACER(XCorrRef, WRITE, HEAP, "search result xcorr"); TRACER_OP_END("compute dot product of theoretical spectrum and binned peaks"); 
             TRACER_BO; TRACER_OP_END("calculate xcorr for search result"); } TRACER_BO; TRACER_OP_END("Test charge hypothesis");
         }
     TRACER_METHOD_END("Spectrum::ComputeXCorrs");}

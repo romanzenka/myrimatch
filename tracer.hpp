@@ -83,6 +83,7 @@ void tracer_dump(const pwiz::chemistry::MZTolerance *x);
 void tracer_dump(const freicore::MassType * x);
 void tracer_dump(const freicore::myrimatch::MzToleranceRule * x);
 void tracer_dump(const freicore::FragmentTypesBitset *x);
+void tracer_dump(const freicore::myrimatch::SearchResult *x);
 
 void tracer_dump(const PeakSpectrumData * x);
 

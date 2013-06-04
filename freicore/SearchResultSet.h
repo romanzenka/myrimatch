@@ -352,10 +352,10 @@ class SearchResultSet
 
     // result comparator
     _SearchResultPtrLessThan _searchResultPtrLessThan;
-
+	public: /* ROMAN */
     // top hits from all categories
     _MainSet _mainSet;
-
+	private: /* ROMAN */
     // top hits by category
     SearchResultPtr _bestFullySpecificTarget;
     SearchResultPtr _bestFullySpecificDecoy;
