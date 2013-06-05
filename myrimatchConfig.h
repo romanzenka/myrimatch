@@ -129,8 +129,8 @@ namespace myrimatch
 
     private:
         void finalize()
-        { TRACER_BI; TRACER_OP_START("RunTimeConfig::finalize"); TRACER_P(*this, "RunTimeConfig", "", READ, HEAP, "Full config of Myrimatch"); TRACER(OutputFormat, READ, HEAP, "Output format parameter");
-            if (bal::iequals(OutputFormat, "pepXML"))
+        { TRACER_METHOD_START("RunTimeConfig::Finalize");
+			if (bal::iequals(OutputFormat, "pepXML"))
                 outputFormat = pwiz::identdata::IdentDataFile::Format_pepXML;
             else if (bal::iequals(OutputFormat, "mzIdentML"))
                 outputFormat = pwiz::identdata::IdentDataFile::Format_MzIdentML;
@@ -370,7 +370,7 @@ namespace myrimatch
             cout << endl;*/
             //exit(1);
 
-            BaseRunTimeConfig::finalize(); TRACER_BO; TRACER_OP_END("RunTimeConfig::finalize"); TRACER_BO;
+            BaseRunTimeConfig::finalize(); TRACER_BO; TRACER_METHOD_END("RunTimeConfig::Finalize");
         }
     };
 

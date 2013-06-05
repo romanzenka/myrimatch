@@ -91,8 +91,8 @@ namespace myrimatch
 			--i;
 		}
 
-		g_rtConfig = new RunTimeConfig(!ignoreConfigErrors); TRACER_P(g_rtConfig, "RunTimeConfig", "", WRITE, HEAP, "Created runtime configuration");
-		g_rtSharedConfig = (BaseRunTimeConfig*) g_rtConfig; TRACER_P(g_rtSharedConfig, "BaseRunTimeConfig", "", WRITE, HEAP, "Shared runtime configuration (sans the extra parsed settings)");
+		g_rtConfig = new RunTimeConfig(!ignoreConfigErrors); TRACER(*g_rtConfig, WRITE, HEAP, "Created runtime configuration");
+		g_rtSharedConfig = (BaseRunTimeConfig*) g_rtConfig;
 
 		if( g_pid == 0 )
 		{
@@ -159,8 +159,8 @@ namespace myrimatch
 				}
 			}
 		}  
-		TRACER(vars, WRITE, STACK, "Variable map"); TRACER(args, WRITE, HEAP, "Cleaned up argument list"); TRACER_OP_END("Override arguments using a list of variables");
-		g_rtConfig->setVariables( vars ); 
+		TRACER(vars, WRITE, STACK, "Variable map"); TRACER(args, WRITE, HEAP, "Cleaned up argument list"); 
+		g_rtConfig->setVariables( vars );  TRACER(*g_rtConfig, WRITE, HEAP, "Set variables to config"); TRACER_OP_END("Override arguments using a list of variables");
 
 		if( g_pid == 0 )
 		{

@@ -49,6 +49,7 @@ namespace freicore {
         struct SpectraList;
 		enum MzToleranceRule;
 		struct SearchResult;
+		struct RunTimeConfig;
     }
 }
 
@@ -84,6 +85,7 @@ void tracer_dump(const freicore::MassType * x);
 void tracer_dump(const freicore::myrimatch::MzToleranceRule * x);
 void tracer_dump(const freicore::FragmentTypesBitset *x);
 void tracer_dump(const freicore::myrimatch::SearchResult *x);
+void tracer_dump(const freicore::myrimatch::RunTimeConfig *x);
 
 void tracer_dump(const PeakSpectrumData * x);
 
@@ -103,7 +105,7 @@ const char * tracer_id(void *ptr);
 #define TRACER_OP_END(name) { cout << flush << "[TRACER]" << '\t' <<  "op_end" << '\t' << name << '\t' << __FILE__ << '\t' << __LINE__ << flush << '\n'; }
 
 #define TRACER_METHOD_START(name) { TRACER_BI; TRACER_OP_START(name); TRACER(*this, READ, HEAP, tracer_id(this)); }
-#define TRACER_METHOD_END(name) { TRACER_OP_END(name); TRACER_BO; }
+#define TRACER_METHOD_END(name) { TRACER(*this, WRITE, HEAP, tracer_id(this)); TRACER_OP_END(name); TRACER_BO; }
 
 #define TRACER_S2S(variable) lexical_cast<string>(variable)
 // Defines scope of stack variables
