@@ -82,95 +82,36 @@ function render_value($io, $io_obj, &$allSame) {
     global $prev_ios;
 
     $id = $io['id'];
-    $type = $io_obj['type'];
     $value = $io['value'];
+
+    $type = $io_obj['type'];
     $prev_value = null;
     if (array_key_exists($io_obj['id'], $prev_ios)) {
         $prev_value = $prev_ios[$io_obj['id']];
     }
     $result = '';
-    if($type == 'std::vector<float>') {
+    if($type == 'std::vector<float>' || $type == 'std::vector<int>' || $type == 'std::vector<double>') {
         $result .= vis_vector($value, $id, $prev_value, $allSame);
     } else if($type == 'freicore::PeakPreData') {
         $result .= vis_spectrum($value, $id, $prev_value, $allSame);
-    } else if($type == 'freicore::myrimatch::Spectrum::PeakData') {
+    } else if($type == 'freicore::PeakSpectrum<PeakInfo>') {
         $result .= vis_spectrum($value, $id, $prev_value, $allSame);
     } else if($type == 'FragmentTypes') {
         $fragments = 'abcxyzZ';
         $result .= '<pre>' . substr($fragments, intval($value), 1) . '</pre>';
     } else if($type == 'freicore::myrimatch::MzToleranceRule') {
         $result .= vis_enum($value, $prev_value, array('0'=>'auto', '1'=>'monoisotopic', '2'=>'average'), $allSame);
-    } else if(startsWith($type, 'std::map<')) {
-        $ios = get_child_ios($id);
-
-        $childrenSame = true;
-        $result2 = '';
-        $result2 .= '<table>';
-        foreach($ios as $cio) {
-            if(endsWith($cio['parent_relation'], 'key')) {
-              $result2 .= '<tr>';
-            }
-            $result2 .= '<td>';
-            $object = get_object($cio['object_id']);
-            $result2 .= get_object_link($object, '&gt;', $cio['operation_id'] );
-            $result2 .= '</td><td>';
-            $result2 .= render_value($cio, $object, $childrenSame);
-            $result2 .= '</td>';
-            if(endsWith($cio['parent_relation'], 'value')) {
-              $result2 .= '</tr>';
-            }
-        }
-        $result2 .= '</table>';
-        if($childrenSame) {
-            $result = dtto();
+    } else if($type == 'char') {
+        if($value == $prev_value) {
+            $result .= dtto();
         } else {
             $allSame = false;
-            $result = $result2;
+            $result .= "<pre>$value</pre> ".chr(intval($value));
         }
-
+    } else if(startsWith($type, 'std::map<')) {
+        $result .= vis_map($id, $allSame);
     } else {
-        $ios = get_child_ios($id);
-        if(count($ios)==0) {
-            $result = vis_value($value, $prev_value, $allSame);
-        } else {
-            $childrenSame = true;
-            $result2 = '';
-            $result2 .= '<table>';
-            $dttomode = false;
-            $dttonames = '';
-            foreach($ios as $cio) {
-                $childSame = true;
-                $object = get_object($cio['object_id']);
-                $result3 = '';
-                $result3 .= '<tr>';
-                $result3 .= '<td>';
-                $result3 .= get_object_link($object, $cio['parent_relation'], $cio['operation_id']);
-                $result3 .= '</td>';
-                $result3 .= '<td>';
-                $result3 .= render_value($cio, $object, $childSame);
-                $result3 .= '</td>';
-                $result3 .= '</tr>';
-                $childrenSame = $childrenSame && $childSame;
-                if(!$childSame) {
-                    if($dttomode) {
-                        $result2 .= "<tr><td title=\"These members are unchanged: $dttonames\">&#x22ee;</td><td></td></tr>";
-                        $dttomode = false;
-                        $dttonames = '';
-                    }
-                    $result2 .= $result3;
-                } else {
-                    $dttomode = true;
-                    $dttonames .= " " .htmlentities($cio['parent_relation']);
-                }
-            }
-            $result2 .= '</table>';
-            if($childrenSame) {
-                $result = dtto();
-            } else {
-                $allSame = false;
-                $result = $result2;
-            }
-        }
+        $result .= vis_structure($io, $prev_value, $allSame);
     }
     $prev_ios[$io_obj['id']] = $value;
     return $result;
@@ -207,10 +148,8 @@ function render_io($r, $reference = 'object', $variable_name='') {
         $result .=  get_operation_link(get_operation($r['operation_id']), $r['object_id']);
     }
     $result .= '</td><td>';
-
     $allSame = true;
     $result .= render_value($r, $object, $allSame);
-
     $result .= '</td><td>';
     $result .= render_code_link($r['code_id'], $r['name']);
     $result .=  '</td>';
