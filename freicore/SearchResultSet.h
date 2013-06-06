@@ -174,10 +174,10 @@ class SearchResultSet
     }
 
     void add(const SearchResultPtr& result)
-	{
+	{	
         if(!result.get())
             throw runtime_error("result pointer is null");
-
+		
         // find results with the same score
         pair<typename _MainSet::iterator, typename _MainSet::iterator> range = _mainSet.equal_range(result);
 
@@ -195,7 +195,7 @@ class SearchResultSet
                 bool sameDigestion = existingResult->specificTermini() == result->specificTermini() &&
                                      existingResult->NTerminusPrefix() == result->NTerminusPrefix() &&
                                      existingResult->CTerminusSuffix() == result->CTerminusSuffix();
-
+				
                 if (!sameDigestion)
                 {
                     // if the new result is more specific, the categories have to be updated
@@ -217,25 +217,25 @@ class SearchResultSet
                     // replace the flanking residues and specificity with the new result
                     if (existingResult->specificTermini() <= result->specificTermini() &&
                         existingResult->NTerminusPrefix() < result->NTerminusPrefix() &&
-                        existingResult->CTerminusSuffix() < result->CTerminusSuffix())
-                        static_cast<DigestedPeptide&>(const_cast<SearchResult&>(*existingResult)) = *result;
+                        existingResult->CTerminusSuffix() < result->CTerminusSuffix()) {
+						static_cast<DigestedPeptide&>(const_cast<SearchResult&>(*existingResult)) = *result; }
                 }
 
                 // add the new result's protein to the existing proteins
                 const_cast<SearchResult&>(*existingResult).proteins.insert(*result->proteins.begin());
             }
         }
-
+		 
         if (isNewResult)
-        {
+		{	
             // if range is empty, the current result will be a new rank
             if (range.first == range.second)
-            {
+			{	
                 // if _maxRanks is not set or the set is not full, insert and increment _currentRanks
                 if (_maxRanks == 0 || _currentRanks < _maxRanks)
                 {
-                    ++_currentRanks;
-                    _mainSet.insert(result);
+					++_currentRanks;
+                    _mainSet.insert(result);	
                 }
                 // otherwise compare the new rank to the worst existing rank
                 else
@@ -245,18 +245,18 @@ class SearchResultSet
                     // if worst rank < new rank, insert the new rank and erase the worst rank
                     SearchResultPtr worstResult = *_mainSet.begin();
                     if (_searchResultPtrLessThan(worstResult, result))
-                    {
+                    {	
                         _mainSet.insert(result);
 
                         // erase all the results tied with the worst result
                         while (!_searchResultPtrLessThan(worstResult, *_mainSet.begin()))
                             _mainSet.erase(_mainSet.begin());
-                    }
+					}
                 }
             }
             // a new result in an existing rank is simply inserted
-            else
-                _mainSet.insert(result);
+			else {
+				_mainSet.insert(result); }
         }
         // existing results are not inserted
 

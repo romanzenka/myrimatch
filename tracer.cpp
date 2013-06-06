@@ -16,6 +16,7 @@
 
 #define STRUCT_OPEN(type) { cout << STRUCT_START << '\t' << ((void*)x) << '\t' << #type; }
 #define STRUCT_MEMBER(name) { cout << '\t' << #name << '\t'; { tracer_dump(&(x->name)); } }
+#define STRUCT_METHOD(name, type)  { cout << '\t' << #name << '\t'; { type val=x->name(); tracer_dump(&(val)); } }
 #define STRUCT_CLOSE { cout << '\t' << STRUCT_END; }
 
 void esc(const char c) {
@@ -91,7 +92,8 @@ void dump_iterable_ptr(const T *x) {
 }
 
 template<typename T, typename S>
-void dump_map(const map<T, S> *x) {
+void dump_map(const map<T, S> *x, const char * typeName) {
+	cout << MAP_START << '\t' << x << '\t' << typeName;
 	typedef map<T, S>::const_iterator iter;
 	for(iter it = x->cbegin(); it != x->cend(); it++) {
 		cout << '\t';
@@ -103,9 +105,23 @@ void dump_map(const map<T, S> *x) {
 }
 
 template<typename T, typename S>
-void dump_map(const boost::container::flat_map<T, S> *x) {
+void dump_map(const boost::container::flat_map<T, S> *x, const char * typeName) {
+	cout << MAP_START << '\t' << x << '\t' << typeName;
 	typedef boost::container::flat_map<T, S>::const_iterator iter;
 	for(iter it = x->cbegin(); it != x->cend(); it++) {
+		cout << "\t";
+		tracer_dump(&(it->first));
+		cout << "\t";
+		tracer_dump(&(it->second));
+	}
+	cout << '\t' << MAP_END;
+}
+
+template<typename T, typename S>
+void dump_map(const pwiz::util::virtual_map<T, S> *x, const char * typeName) {
+	cout << MAP_START << '\t' << x << '\t' << typeName;
+	typedef pwiz::util::virtual_map<T, S>::const_iterator iter;
+	for(iter it = x->begin(); it != x->end(); it++) {
 		cout << "\t";
 		tracer_dump(&(it->first));
 		cout << "\t";
@@ -118,9 +134,12 @@ void tracer_dump(const vector<string> *x) {
 	dump_iterable(x, "std::vector<string>");
 }
 
+void tracer_dump(const std::set<int> *x) {
+	dump_iterable(x, "std::set<int>");
+}
+
 void tracer_dump(const map<string, string> *x) {
-	cout << MAP_START << '\t' << x << '\t' << "std::map<string, string>";
-	dump_map(x);
+	dump_map(x, "std::map<string, string>");
 }
 
 template <typename T>
@@ -266,13 +285,11 @@ void tracer_dump(const freicore::FragmentTypesBitset *x) {
 }
 
 void tracer_dump(const boost::container::flat_map<int, int> *x) {
-	cout << MAP_START << '\t' << x << '\t' << "boost::container::flat_map<int, int>";
-	dump_map(x);
+	dump_map(x, "boost::container::flat_map<int, int>");
 }
 
 void tracer_dump(const boost::container::flat_map<double, int> *x) {
-	cout << MAP_START << '\t' << x << '\t' << "boost::container::flat_map<double, int>";
-	dump_map(x);
+	dump_map(x, "boost::container::flat_map<double, int>");
 }
 
 void tracer_dump(const vector<freicore::myrimatch::SearchResult> *x) {
@@ -405,10 +422,34 @@ void tracer_dump(const freicore::myrimatch::SearchResult *x) {
 	STRUCT_CLOSE;
 }
 
+void tracer_dump(const pwiz::proteome::ModificationMap *m) {
+	dump_map(m, "pwiz::proteome::ModificationMap");
+}
+
+void tracer_dump(const pwiz::proteome::Peptide *x) {
+	STRUCT_OPEN(pwiz::proteome::Peptide);
+	STRUCT_MEMBER(sequence());
+	STRUCT_MEMBER(modifications());
+	STRUCT_CLOSE;
+}
+
+void tracer_dump(const pwiz::proteome::DigestedPeptide *x) {
+	STRUCT_OPEN(pwiz::proteome::DigestedPeptide);
+	STRUCT_MEMBER(sequence());
+	STRUCT_MEMBER(modifications());
+	STRUCT_MEMBER(offset_);
+    STRUCT_MEMBER(missedCleavages_);
+    STRUCT_MEMBER(NTerminusIsSpecific_);
+    STRUCT_MEMBER(CTerminusIsSpecific_);
+    STRUCT_MEMBER(NTerminusPrefix_);
+    STRUCT_MEMBER(CTerminusSuffix_);
+	
+	STRUCT_CLOSE;
+}
+
 template <typename T>
 void tracer_dump(const freicore::Histogram<T> *x) {
-	cout << MAP_START << '\t' << x << '\t' << "freicore::Histogram<T>";
-	dump_map(&(x->m_bins));
+	dump_map(&(x->m_bins), "freicore::Histogram<T>");
 }
 
 template <typename T>
@@ -423,11 +464,6 @@ void tracer_dump(const std::vector<T> *x) {
 
 void tracer_dump(const freicore::SearchResultSet<freicore::myrimatch::SearchResult> *x) {
 	dump_iterable(&(x->_mainSet), "freicore::SearchResultSet<freicore::myrimatch::SearchResult>");
-}
-
-template <typename T>
-void tracer_dump(const boost::shared_ptr<T> *x) {
-	tracer_dump(x->get());
 }
 
 void tracer_dump(const freicore::myrimatch::Spectrum *x) {
@@ -495,6 +531,10 @@ void tracer_dump(const boost::container::flat_map<double, freicore::myrimatch::P
     }
 }
 
+void tracer_dump(const std::vector<pwiz::chemistry::MZTolerance> *x) {
+	dump_iterable(x, "std::vector<pwiz::chemistry::MZTolerance>");
+}
+
 void tracer_dump(const freicore::PrecursorMassHypothesis *x) {
 	cout << STRUCT_START << '\t' << x << '\t' << "freicore::PrecursorMassHypothesis";
 	cout  << '\t' << "mass" << '\t';
@@ -543,6 +583,17 @@ void tracer_dump(const freicore::myrimatch::MzToleranceRule *x) {
 	}
 }
 
+void tracer_dump(const pwiz::proteome::Modification *x) {
+	STRUCT_OPEN(pwiz::proteome::Modification);
+	STRUCT_METHOD(hasFormula, bool);
+	STRUCT_METHOD(monoisotopicDeltaMass, double);
+	STRUCT_METHOD(averageDeltaMass, double);
+	STRUCT_CLOSE;
+}
+
+void tracer_dump(const pwiz::proteome::ModificationList *x) {
+	dump_iterable(x, "pwiz::proteome::ModificationList");	
+}
 
 const char * tracer_id(const freicore::BaseSpectrum *x) {
     return x->nativeID.c_str();
@@ -552,7 +603,7 @@ const char * tracer_id(const freicore::myrimatch::Spectrum *x) {
     return x->nativeID.c_str();
 }
 
-const char * tracer_id(void *ptr) { 
+const char * tracer_id(const void * const ptr) { 
     return "this*"; 
 }
 

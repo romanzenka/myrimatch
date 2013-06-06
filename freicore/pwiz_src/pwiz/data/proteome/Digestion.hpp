@@ -98,7 +98,7 @@ class PWIZ_API_DECL DigestedPeptide : public Peptide
     /// returns true iff peptide sequences, masses, and all digestion metadata are equal
     bool operator==(const DigestedPeptide& rhs) const;
 
-    private:
+    public: /* ROMAN */
     size_t offset_;
     size_t missedCleavages_;
     bool NTerminusIsSpecific_;

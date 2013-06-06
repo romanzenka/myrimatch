@@ -218,7 +218,7 @@ namespace myrimatch
 		    g_rtConfig->maxChargeStateFromSpectra = max(s->possibleChargeStates.back(), g_rtConfig->maxChargeStateFromSpectra);
 		TRACER(g_rtConfig->maxChargeStateFromSpectra, WRITE, HEAP, "Maximum charge from all spectra"); TRACER_OP_END("Determine the maximum seen charge state");
 		g_rtConfig->maxFragmentChargeState = ( g_rtConfig->MaxFragmentChargeState > 0 ? g_rtConfig->MaxFragmentChargeState+1 : g_rtConfig->maxChargeStateFromSpectra );
-
+		TRACER(g_rtConfig->maxFragmentChargeState, WRITE, HEAP, "max fragment charge state");
 		g_rtConfig->monoPrecursorMassTolerance.clear();
         g_rtConfig->avgPrecursorMassTolerance.clear();
 		for( int z=1; z <= g_rtConfig->maxChargeStateFromSpectra; ++z )
@@ -228,7 +228,7 @@ namespace myrimatch
 			g_rtConfig->avgPrecursorMassTolerance.push_back( MZTolerance(g_rtConfig->AvgPrecursorMzTolerance.value * z,
                                                                          g_rtConfig->AvgPrecursorMzTolerance.units) );
         }
-
+		TRACER(g_rtConfig->monoPrecursorMassTolerance, WRITE, HEAP, "mono precursor mass tolerance per charge state"); TRACER(g_rtConfig->avgPrecursorMassTolerance, WRITE, HEAP, "average precursor mass tolerance per charge state");
 		size_t monoPrecursorHypotheses = 0, avgPrecursorHypotheses = 0;
 
 		// Create a map of precursor masses to the spectrum indices
@@ -471,17 +471,17 @@ namespace myrimatch
 
 
 	boost::int64_t QuerySequence( const DigestedPeptide& candidate, const string& protein, bool isDecoy, bool estimateComparisonsOnly = false )
-	{
+	{ TRACER_OP_START("QuerySequence"); TRACER_BI; TRACER(candidate, READ, HEAP, "digested peptide"); TRACER(protein, READ, HEAP, "protein"); TRACER(isDecoy, READ, STACK, "decoy"); TRACER(estimateComparisonsOnly, READ, STACK, "estimate comparisons");
 		boost::int64_t numComparisonsDone = 0;
 
-        string sequence = PEPTIDE_N_TERMINUS_STRING + candidate.sequence() + PEPTIDE_C_TERMINUS_STRING;
+        string sequence = PEPTIDE_N_TERMINUS_STRING + candidate.sequence() + PEPTIDE_C_TERMINUS_STRING; TRACER(sequence, WRITE, STACK, "sequence with peptide terminus marks");
         double monoCalculatedMass = candidate.monoisotopicMass();
-        double avgCalculatedMass = candidate.molecularWeight();
-
+        double avgCalculatedMass = candidate.molecularWeight(); TRACER(g_rtConfig->maxChargeStateFromSpectra, READ, HEAP, "Max spectrum charge");
+		TRACER(g_rtConfig->maxFragmentChargeState, WRITE, STACK, "max fragment charge state");
 		for( int z = 0; z < g_rtConfig->maxChargeStateFromSpectra; ++z )
-		{
-			int fragmentChargeState = min( z, g_rtConfig->maxFragmentChargeState-1 );
-			vector< double > sequenceIons;
+		{	TRACER_BI; TRACER_OP_START("test charge"); TRACER(z, WRITE, STACK, "charge to be tested");
+			int fragmentChargeState = min( z, g_rtConfig->maxFragmentChargeState-1 ); 
+			vector< double > sequenceIons; 
 
             // Look up the spectra that have precursor mass hypotheses between mass + massError and mass - massError
             vector<SpectraMassMap::iterator> candidateHypotheses;
@@ -494,14 +494,14 @@ namespace myrimatch
 			end = avgSpectraByChargeState[z].upper_bound( avgCalculatedMass + g_rtConfig->avgPrecursorMassTolerance[z] );
 			for( cur = avgSpectraByChargeState[z].lower_bound( avgCalculatedMass - g_rtConfig->avgPrecursorMassTolerance[z] ); cur != end; ++cur )
                 candidateHypotheses.push_back(cur);
-
+			
             BOOST_FOREACH(SpectraMassMap::iterator spectrumHypothesisPair, candidateHypotheses)
-			{
-                Spectrum* spectrum = spectrumHypothesisPair->second.first;
-                PrecursorMassHypothesis& p = spectrumHypothesisPair->second.second;
+			{	TRACER_OP_START("match candidate hypothesis"); TRACER(z, WRITE, STACK, "charge state"); 
+                Spectrum* spectrum = spectrumHypothesisPair->second.first; TRACER(*spectrum, READ, HEAP, "spectrum to match");
+                PrecursorMassHypothesis& p = spectrumHypothesisPair->second.second; TRACER(p, READ, HEAP, "spectrum precursor hypothesis");
 
                 boost::shared_ptr<SearchResult> resultPtr(new SearchResult(candidate));
-                SearchResult& result = *resultPtr;
+                SearchResult& result = *resultPtr; TRACER(result, WRITE, HEAP, "new search result to fill in");
 
 				if( !estimateComparisonsOnly )
 				{
@@ -514,7 +514,7 @@ namespace myrimatch
                                                spectrum->fragmentTypes,
                                                g_rtConfig->UseSmartPlusThreeModel,
                                                0,
-                                               0 );
+                                               0 ); TRACER(sequenceIons, WRITE, STACK, "sequence ions");
                     }
 					STOP_PROFILER(2);
 					START_PROFILER(3);
@@ -522,10 +522,10 @@ namespace myrimatch
 					STOP_PROFILER(3);
 
 					if( result.mvh >= g_rtConfig->MinResultScore )
-					{
+					{	TRACER(result.mvh, READ, HEAP, "mvh over minimum score");
 						START_PROFILER(5);
                         result.proteins.insert(protein);
-                        result._isDecoy = isDecoy;
+                        result._isDecoy = isDecoy; TRACER(result, WRITE, HEAP, "Updated protein list and decoy flag");
 						STOP_PROFILER(5);
 					}
 				}
@@ -543,18 +543,18 @@ namespace myrimatch
 				        ++ spectrum->numDecoyComparisons;
                     else
                         ++ spectrum->numTargetComparisons;
-
+					TRACER(g_rtConfig->MinResultScore, READ, HEAP, "minimum mvh score");
 				    if( result.mvh >= g_rtConfig->MinResultScore )
-				    {
+				    {	TRACER(g_rtConfig->KeepUnadjustedPrecursorMz, READ, HEAP, "keep unadjusted precursor m/z");
                         if( g_rtConfig->KeepUnadjustedPrecursorMz )
-                        {
+						{
                             PrecursorMassHypothesis unadjustedHypothesis(p);
                             unadjustedHypothesis.mass = Ion::neutralMass(spectrum->mzOfPrecursor, p.charge);
-                            result.precursorMassHypothesis = unadjustedHypothesis;
+                            result.precursorMassHypothesis = unadjustedHypothesis; TRACER(result.precursorMassHypothesis, WRITE, HEAP, "unadjusted precursor mass hypothesis");
                         }
-                        else
-                            result.precursorMassHypothesis = p;
-
+                        else {
+							result.precursorMassHypothesis = p; TRACER(result.precursorMassHypothesis, WRITE, HEAP, "precursor mass hypothesis for the result"); }
+						
 					    //result.massError = p.massType == MassType_Monoisotopic ? monoCalculatedMass - p.mass
                         //                                                       : avgCalculatedMass - p.mass;
 
@@ -562,13 +562,13 @@ namespace myrimatch
 					    //++ spectrum->mvhScoreDistribution[ (int) (result.mvh+0.5) ];
 					    //++ spectrum->mzFidelityDistribution[ (int) (result.mzFidelity+0.5)];
 
-					    spectrum->resultsByCharge[z].add( resultPtr );         
+					    spectrum->resultsByCharge[z].add( resultPtr ); TRACER(*spectrum, WRITE, HEAP, "Add the result to the spectrum's results by charge");        
 				    }
                 }
 				STOP_PROFILER(4);
-			}
-		}
-
+			TRACER_OP_END("match candidate hypothesis"); }
+		TRACER_OP_END("test charge"); TRACER_BO; }
+		TRACER_BO; TRACER_OP_END("QuerySequence");
 		return numComparisonsDone;
 	}
 
@@ -581,18 +581,18 @@ namespace myrimatch
 		    {
                 if (!proteinTasks.dequeue(&proteinTask))
 				    break;
-
+				
 			    ++ searchStatistics.numProteinsDigested;
 
                 proteinData p = proteins[proteinTask];
-
+				
                 if (!g_rtConfig->ProteinListFilters.empty() &&
                     g_rtConfig->ProteinListFilters.find(p.getName()) == string::npos)
-                {
+                {	
                     continue;
                 }
-
-                Peptide protein(p.getSequence());
+				TRACER_OP_START("process protein"); TRACER(p.getName(), READ, STACK, "protein name");
+                Peptide protein(p.getSequence()); TRACER(protein, WRITE, STACK, "protein to query");
                 bool isDecoy = p.isDecoy();
 
                 // BXZ are allowed to be in the prefix/suffix but not in the peptide sequence
@@ -605,16 +605,16 @@ namespace myrimatch
                 else
                     digestionPtr.reset(new Digestion(protein, g_rtConfig->cleavageAgentRegex, g_rtConfig->digestionConfig));
 
-                const Digestion& digestion = *digestionPtr;
+                const Digestion& digestion = *digestionPtr; TRACER_OP_START("query digested peptides");
                 for( Digestion::const_iterator itr = digestion.begin(); itr != digestion.end(); )
-                {
+                { TRACER_OP_START("query digested peptide");
                     ++searchStatistics.numPeptidesGenerated;
 
                     if (itr->sequence().find_first_not_of(validSequenceResidues) != string::npos ||
                         itr->NTerminusPrefix().find_first_not_of(validResidues) != string::npos ||
                         itr->CTerminusSuffix().find_first_not_of(validResidues) != string::npos)
-                    {
-                        ++itr;
+                    {   TRACER_OP_START("invalid characters in sequence");
+                        ++itr; TRACER(itr->sequence(), READ, HEAP, "Sequence contains invalid characters"); TRACER_OP_END("invalid characters in sequence"); TRACER_OP_END("query digested peptide");
                         continue;
                     }
 
@@ -624,21 +624,21 @@ namespace myrimatch
 
                     if( minMass > g_rtConfig->curMaxPeptideMass ||
                         maxMass < g_rtConfig->curMinPeptideMass )
-                    {
-                        ++itr;
-                        continue;
+                    {  TRACER_OP_START("peptide mass out of bounds");
+                        ++itr; TRACER(g_rtConfig->curMinPeptideMass, READ, HEAP, "min allowed peptide mass"); TRACER(g_rtConfig->curMaxPeptideMass, READ, HEAP, "max allowed peptide mass"); TRACER(minMass, WRITE, STACK, "min mass"); TRACER(maxMass, WRITE, STACK, "max mass"); 
+                       TRACER_OP_END("peptide mass out of bounds"); TRACER_OP_END("query digested peptide"); continue;
                     }
-
+					
 					PTMVariantList variantIterator( (*itr), g_rtConfig->MaxDynamicMods, g_rtConfig->dynamicMods, g_rtConfig->staticMods, g_rtConfig->MaxPeptideVariants);
                     if(variantIterator.isSkipped)
-                    {
+                    {	TRACER_OP_START("variants skipped - too many");
                         ++ searchStatistics.numPeptidesSkipped;
                         ++ itr;
-                        continue;
+                        TRACER_OP_END("variants skipped - too many"); TRACER_OP_END("query digested peptide"); continue;
                     }
 
                     searchStatistics.numVariantsGenerated += variantIterator.numVariants;
-
+					TRACER_OP_START("query all ptm variants");
                     // query each variant
                     do
                     {
@@ -646,11 +646,11 @@ namespace myrimatch
                         if( queryComparisonCount > 0 )
                             searchStatistics.numComparisonsDone += queryComparisonCount;
                     }
-                    while (variantIterator.next());
+                    while (variantIterator.next());TRACER_OP_END("query all ptm variants");
 
                     ++itr;
-                }
-            }
+                TRACER_OP_END("query digested peptide"); } TRACER_OP_END("query digested peptides");
+				TRACER_OP_END("process protein"); }
         } catch( std::exception& e )
         {
             cerr << " terminated with an error: " << e.what() << endl;

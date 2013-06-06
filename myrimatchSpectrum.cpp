@@ -132,14 +132,14 @@ namespace myrimatch
 		double spectrumMedianMass = totalPeakSpace/2.0; TRACER(spectrumMedianMass, WRITE, STACK, "median spectrum mass (max peak - min peak) / 2"); TRACER(g_rtConfig->FragmentMzTolerance, READ, HEAP, "fragment m/z tolerance");
         double fragMassError = g_rtConfig->FragmentMzTolerance.units == MZTolerance::PPM ? (spectrumMedianMass*g_rtConfig->FragmentMzTolerance.value*1e-6):g_rtConfig->FragmentMzTolerance.value; TRACER(fragMassError, WRITE, STACK, "fragment mass error (for PPM uses median mass for reference)");
 		//cout << fragMassError << "," << mOfPrecursor << endl;
-		int totalPeakBins = (int) round( totalPeakSpace / ( fragMassError * 2.0f ), 0 ); TRACER(totalPeakBins, WRITE, STACK, "total peak bins - ~two bins per each fragment mass error interval");
+		int totalPeakBins = (int) round( totalPeakSpace / ( fragMassError * 2.0f ), 0 ); TRACER(totalPeakBins, WRITE, STACK, "total peak bins - ~one bins per each +-fragment mass error interval");
 		initialize( g_rtConfig->NumIntensityClasses+1, g_rtConfig->NumMzFidelityClasses );
 		for( PeakData::iterator itr = peakData.begin(); itr != peakData.end(); ++itr )
 		{
             if (itr->second.intenClass > 0)
 			    ++ intenClassCounts[ itr->second.intenClass-1 ];
 		}
-		intenClassCounts[ g_rtConfig->NumIntensityClasses ] = totalPeakBins - peakCount;
+		intenClassCounts[ g_rtConfig->NumIntensityClasses ] = totalPeakBins - peakCount; TRACER(intenClassCounts, WRITE, HEAP, "The last class is totalPeakBins - peakCount");
 		//cout << id.nativeID << ": " << intenClassCounts << endl;
 
         int divider = 0;
@@ -565,15 +565,15 @@ namespace myrimatch
 		TRACER(mzFidelityThresholds, READ, HEAP, "mz fidelity m/z fragment error thresholds");
 		START_PROFILER(6);
 		int totalPeaks = (int) seqIons.size(); TRACER(totalPeaks, WRITE, STACK, "number of sequence ions");
-		TRACER(g_rtConfig->FragmentMzTolerance, READ, HEAP, "fragment m/z tolerance");
+		TRACER(g_rtConfig->FragmentMzTolerance, READ, HEAP, "fragment m/z tolerance"); TRACER_OP_START("match sequence ions");
         for( size_t j=0; j < seqIons.size(); ++j )
-	    { TRACER_OP_START("Place j-th sequence ion"); TRACER(j, WRITE, STACK, "ion index");
+	    { TRACER_OP_START("process j-th sequence ion"); TRACER(j, WRITE, STACK, "ion index");
 		    // skip theoretical ions outside the scan range of the spectrum
 		    if( seqIons[j] < mzLowerBound ||
 			    seqIons[j] > mzUpperBound )
 		    {
 			    --totalPeaks; // one less ion to consider because it's out of the scan range
-			    TRACER(j, READ, STACK, "peak not within [mzLowerBound, mzUpperBound]"); TRACER(totalPeaks, WRITE, STACK, "total peaks lowered"); TRACER_OP_END("Place j-th sequence ion"); continue;
+			    TRACER(j, READ, STACK, "peak not within [mzLowerBound, mzUpperBound]"); TRACER(totalPeaks, WRITE, STACK, "total peaks lowered"); TRACER_OP_END("process j-th sequence ion"); continue;
 		    }
 
 
@@ -602,8 +602,8 @@ namespace myrimatch
 			    //result.mzMAE += 2.0 * g_rtConfig->FragmentMzTolerance;
 			    ++mzFidelityKey[ g_rtConfig->NumMzFidelityClasses ];
 		    }
-
-	    TRACER_OP_END("Place j-th sequence ion");} TRACER(mvhKey, WRITE, STACK, "mvhKey"); TRACER(mzFidelityKey, WRITE, STACK, "mzFidelityKey");
+			 
+	    TRACER_OP_END("process j-th sequence ion");} TRACER(mvhKey, WRITE, STACK, "mvhKey"); TRACER(mzFidelityKey, WRITE, STACK, "mzFidelityKey"); TRACER_OP_END("match sequence ions");
 		STOP_PROFILER(6);
 
 		//result.mzSSE /= totalPeaks;
