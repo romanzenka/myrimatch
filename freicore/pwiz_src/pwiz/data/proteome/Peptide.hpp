@@ -108,7 +108,7 @@ class PWIZ_API_DECL Peptide
     /// modifications length, or modifications
     bool operator<(const Peptide& rhs) const;
 
-    private:
+    public:
     friend class ModificationMap; // allow ModificationMap to befriend Peptide::Impl
     friend class Fragmentation;
     class Impl;

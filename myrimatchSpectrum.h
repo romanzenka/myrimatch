@@ -169,10 +169,10 @@ namespace myrimatch
 	struct Spectrum : public PeakSpectrum< PeakInfo >, SearchSpectrum< SearchResult >
 	{
 		void initialize( int numIntenClasses, int numMzFidelityClasses )
-		{
-			intenClassCounts.resize( numIntenClasses, 0 );
-            mzFidelityThresholds.resize( numMzFidelityClasses, 0 );
-		}
+		{ TRACER_METHOD_START("Spectrum::initialize"); TRACER(numIntenClasses, READ, STACK, "num intensity classes"); TRACER(numMzFidelityClasses, READ, STACK, "num mz fidelity classes");
+			intenClassCounts.resize( numIntenClasses, 0 ); TRACER(intenClassCounts, WRITE, HEAP, "intensity class counts");
+            mzFidelityThresholds.resize( numMzFidelityClasses, 0 );  TRACER(mzFidelityThresholds, WRITE, HEAP, "mzFidelity thresholds");
+			TRACER_METHOD_END("Spectrum::initialize"); }
 
 		void Preprocess();
 

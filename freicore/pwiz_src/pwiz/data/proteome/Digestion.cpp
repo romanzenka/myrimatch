@@ -389,7 +389,7 @@ class Digestion::Impl
     }
 
     inline void digest() const
-    {
+    { TRACER_OP_START("Digestion::digest");
         if (sites_.empty())
         {
             try
@@ -400,19 +400,19 @@ class Digestion::Impl
                 {
                     for (int i=-1, end=(int) sequence.size()-1; i < end; ++i)
                         sites_.push_back(i);
-                    sitesSet_.insert(sites_.begin(), sites_.end());
+                    sitesSet_.insert(sites_.begin(), sites_.end()); TRACER(sites_, WRITE, HEAP, "sites"); TRACER_OP_END("Digestion::digest");
                     return;
                 }
                 else if (cleavageAgent_ == MS_no_cleavage)
                 {
                     sites_.push_back(-1);
                     sites_.push_back(sequence.length()-1);
-                    sitesSet_.insert(sites_.begin(), sites_.end());
+                    sitesSet_.insert(sites_.begin(), sites_.end()); TRACER(sites_, WRITE, HEAP, "sites"); TRACER_OP_END("Digestion::digest");
                     return;
                 }
 
-                if (cleavageAgentRegex_.empty())
-                    throw runtime_error("empty cleavage regex");
+                if (cleavageAgentRegex_.empty()) {
+					TRACER_OP_END("Digestion::digest"); throw runtime_error("empty cleavage regex"); }
 
                 std::string::const_iterator start = sequence.begin();
                 std::string::const_iterator end = sequence.end();
@@ -443,11 +443,11 @@ class Digestion::Impl
                 sitesSet_.insert(sites_.begin(), sites_.end());
             }
             catch (exception& e)
-            {
+            { TRACER_OP_END("Digestion::digest");
                 throw runtime_error(string("[Digestion::Impl::digest()] ") + e.what());
             }
         }
-    }
+    TRACER_OP_END("Digestion::digest"); }
 
     inline vector<DigestedPeptide> find_all(const Peptide& peptide)
     {
