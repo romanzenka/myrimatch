@@ -108,7 +108,7 @@ function render_value($io, $io_obj, &$allSame) {
             $allSame = false;
             $result .= "<pre>$value</pre> ".chr(intval($value));
         }
-    } else if(startsWith($type, 'std::map<')) {
+    } else if(startsWith($type, 'std::map<') || $type=='pwiz::proteome::ModificationMap') {
         $result .= vis_map($id, $allSame);
     } else {
         $result .= vis_structure($io, $prev_value, $allSame);
