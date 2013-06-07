@@ -122,8 +122,8 @@ namespace myrimatch
         vector<MZTolerance> monoPrecursorMassTolerance;
 
         // Compute the fragment mass error bins and their associated log odds scores
-        vector<double>  massErrors;
-        vector<double>  mzFidelityLods;
+        vector<double>  massErrors; // ROMAN : BOGUS
+        vector<double>  mzFidelityLods; // ROMAN : BOGUS
 
         pwiz::identdata::IdentDataFile::Format outputFormat;
 
@@ -320,48 +320,48 @@ namespace myrimatch
             {
                 minIntensityClassCount = NumIntensityClasses;
                 minMzFidelityClassCount = NumMzFidelityClasses;
-            } TRACER(minIntensityClassCount, WRITE, HEAP, "???"); TRACER(minMzFidelityClassCount, WRITE, HEAP, "???"); TRACER_OP_END("determine number of intensity/mz fidelity class counts");
+            } TRACER(minIntensityClassCount, WRITE, HEAP, "minimal amount of peaks to fill intensity classes"); TRACER(minMzFidelityClassCount, WRITE, HEAP, "minimal amount of peaks to fill mz fidelity classes"); TRACER_OP_END("determine number of intensity/mz fidelity class counts");
             
-			maxChargeStateFromSpectra = 0; TRACER_OP_START("Determine maximum fragment charge state"); TRACER(MaxFragmentChargeState, READ, HEAP, "???"); TRACER(NumChargeStates, READ, HEAP, "???");
+			maxChargeStateFromSpectra = 0; TRACER_OP_START("Determine maximum fragment charge state"); TRACER(MaxFragmentChargeState, READ, HEAP, "naximum fragment charge state"); TRACER(NumChargeStates, READ, HEAP, "number of charge states to consider");
             maxFragmentChargeState = ( MaxFragmentChargeState > 0 ? MaxFragmentChargeState+1 : NumChargeStates );
             TRACER(maxFragmentChargeState, WRITE, HEAP, "Either MaxFragmentChargeState or NumChargeStates..."); TRACER_OP_END("Determine maximum fragment charge state");
-			vector<double> insideProbs; TRACER_OP_START("Calculate mz fidelity log odds ratio vector");
-            int numBins = 5; TRACER(numBins, READ, STACK, "Number of bins is set to a constant");
+			vector<double> insideProbs;
+            int numBins = 5;
             // Divide the fragment mass error into half and use it as standard deviation
-            double stdev = FragmentMzTolerance.value*0.5; TRACER_OP_START("determine stdev"); TRACER_P(FragmentMzTolerance, "MZTolerance", TRACER_S2S(FragmentMzTolerance), READ, HEAP, "Fragment m/z tolerance"); TRACER(stdev, WRITE, STACK, "Standard deviation is 1/2 of FragmentMzTolerance"); TRACER_OP_END("determine stdev"); 
+            double stdev = FragmentMzTolerance.value*0.5; 
             massErrors.clear();
             insideProbs.clear();
             mzFidelityLods.clear();
             // Divide the mass error distributions into 10 bins.
-            for(int j = 1; j <= numBins; ++j) 
-            { TRACER_OP_START("Calculate bin mass error and probability value"); TRACER_BI; TRACER(j, READ, STACK, "Bin number");
+            for(int j = 1; j <= numBins; ++j) /* ROMAN - BOGUS, unused */
+            { 
                 // Compute the mass error associated with each bin.
-                double massError = FragmentMzTolerance.value * ((double)j/(double)numBins); TRACER(massError, WRITE, STACK, "mass error for the bin - increases linearly");
+                double massError = FragmentMzTolerance.value * ((double)j/(double)numBins);
                 // Compute the cumulative distribution function of massError 
                 // with mu=0 and sig=stdev
                 double errX = (massError-0)/(stdev*sqrt(2.0)); 
-                double cdf = 0.5 * (1.0+pwiz::math::erf(errX)); TRACER(cdf, WRITE, STACK, "probability that the error is less than massError, given normal distribution with stdev"); 
+                double cdf = 0.5 * (1.0+pwiz::math::erf(errX));
                 // Compute the gaussian inside probability
-                double insideProb = 2.0*cdf-1.0; TRACER(insideProb, WRITE, STACK, "probability that an error lies within (-massError, massError)");
+                double insideProb = 2.0*cdf-1.0;
                 // Save the mass errors and inside probabilities
                 massErrors.push_back(massError);
-                insideProbs.push_back(insideProb); TRACER_BO; TRACER_OP_END("Calculate bin mass error and probability value");
-            } TRACER(massErrors, WRITE, HEAP, "Mass error vector"); TRACER(insideProbs, WRITE, HEAP, "Probability that the error is at least as big for the massError vector");
+                insideProbs.push_back(insideProb);
+            } 
             // mzFidelity bin probablities are dependent on the number of bin. So,
             // compute the probabilities only once.
             // Compute the probability associated with each mass error bin
-            double denom = insideProbs.back(); TRACER_BI; TRACER(denom, WRITE, STACK, "The probability of the biggest bin, should be close to 1.0");
-            for(int j = 0; j < numBins; ++j) 
-            { TRACER_OP_START("Calculate mz fidelity log odds ratio for bin"); TRACER_BI; TRACER(j, READ, STACK, "Bin number");
+            double denom = insideProbs.back();
+            for(int j = 0; j < numBins; ++j)  /* ROMAN - BOGUS, unused */
+            { 
                 double prob;
                 if(j==0) {
                     prob = insideProbs[j]/denom;
                 } else {
                     prob = (insideProbs[j]-insideProbs[j-1])/denom;
-                } TRACER(prob, WRITE, STACK, "Probability that the value lies exactly in the particular bin");
+                }
                 // Compute the log odds ratio of GaussianProb to Uniform probability and save it
-                mzFidelityLods.push_back(log(prob*(double)numBins)); TRACER(mzFidelityLods.back(), WRITE, HEAP, "log(prob of the bin * numBins)"); TRACER_OP_END("Calculate mz fidelity log odds ratio for bin"); TRACER_BO;
-            } TRACER(mzFidelityLods, WRITE, HEAP, "Calculated mz fidelity log odds ratios"); TRACER_OP_END("Calculate mz fidelity log odds ratio vector");
+                mzFidelityLods.push_back(log(prob*(double)numBins)); 
+            } 
             /*cout << "Error-Probs:" << endl;
             for(int j = 0; j < numBins; ++j) 
             {
@@ -370,7 +370,7 @@ namespace myrimatch
             cout << endl;*/
             //exit(1);
 
-            BaseRunTimeConfig::finalize(); TRACER_BO; TRACER_METHOD_END("RunTimeConfig::Finalize");
+            BaseRunTimeConfig::finalize(); TRACER_METHOD_END("RunTimeConfig::Finalize");
         }
     };
 

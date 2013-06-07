@@ -132,7 +132,7 @@ namespace myrimatch
 		double spectrumMedianMass = totalPeakSpace/2.0; TRACER(spectrumMedianMass, WRITE, STACK, "median spectrum mass (max peak - min peak) / 2"); TRACER(g_rtConfig->FragmentMzTolerance, READ, HEAP, "fragment m/z tolerance");
         double fragMassError = g_rtConfig->FragmentMzTolerance.units == MZTolerance::PPM ? (spectrumMedianMass*g_rtConfig->FragmentMzTolerance.value*1e-6):g_rtConfig->FragmentMzTolerance.value; TRACER(fragMassError, WRITE, STACK, "fragment mass error (for PPM uses median mass for reference)");
 		//cout << fragMassError << "," << mOfPrecursor << endl;
-		int totalPeakBins = (int) round( totalPeakSpace / ( fragMassError * 2.0f ), 0 ); TRACER(totalPeakBins, WRITE, STACK, "total peak bins - ~one bins per each +-fragment mass error interval");
+		int totalPeakBins = (int) round( totalPeakSpace / ( fragMassError * 2.0f ), 0 ); TRACER(totalPeakBins, WRITE, STACK, "total peak bins - ~one bin per each +-fragment mass error interval");
 		initialize( g_rtConfig->NumIntensityClasses+1, g_rtConfig->NumMzFidelityClasses );
 		for( PeakData::iterator itr = peakData.begin(); itr != peakData.end(); ++itr )
 		{
@@ -141,14 +141,14 @@ namespace myrimatch
 		}
 		intenClassCounts[ g_rtConfig->NumIntensityClasses ] = totalPeakBins - peakCount; TRACER(intenClassCounts, WRITE, HEAP, "The last class is totalPeakBins - peakCount");
 		//cout << id.nativeID << ": " << intenClassCounts << endl;
-
+		TRACER_OP_START("calculate mzFidelity thresholds");
         int divider = 0;
 	    for( int i=0; i < g_rtConfig->NumMzFidelityClasses-1; ++i )
 	    {
 		    divider += 1 << i;
 		    mzFidelityThresholds[i] = g_rtConfig->FragmentMzTolerance.value * (double)divider / (double)g_rtConfig->minMzFidelityClassCount;
 	    }
-		mzFidelityThresholds.back() = g_rtConfig->FragmentMzTolerance.value;
+		mzFidelityThresholds.back() = g_rtConfig->FragmentMzTolerance.value; TRACER(mzFidelityThresholds, WRITE, HEAP, "m/z fidelity thresholds"); TRACER_OP_END("calculate mzFidelity thresholds");
         //cout << id.nativeID << ": " << mzFidelityThresholds << endl;
 
 		//totalPeakSpace = peakPreData.rbegin()->first - peakPreData.begin()->first;
@@ -242,14 +242,14 @@ namespace myrimatch
         vector<float> basePeakIntensityByRegion(numberOfRegions, 1); TRACER(basePeakIntensityByRegion, WRITE, STACK, "initial base peak intensity for each region"); 
         int regionSelector = (int) (maxPeakMass / numberOfRegions); /* ROMAN - for better output */ int prevNormalizationIndex = -1; TRACER(regionSelector, WRITE, STACK, "region size");  
         for(PeakPreData::iterator itr = peakPreData.begin(); itr != peakPreData.end(); ++itr)
-        { TRACER_BI;
+        { 
             itr->second = sqrt(itr->second);
             int mzBin = round(itr->first / binWidth); 
-            int normalizationIndex = mzBin / regionSelector; /* ROMAN */ if(prevNormalizationIndex!=normalizationIndex) { TRACER(itr->first, READ, HEAP, "Peak mass starting new region"); TRACER(normalizationIndex, WRITE, STACK, "Region number"); prevNormalizationIndex = normalizationIndex; }
+            int normalizationIndex = mzBin / regionSelector; /* ROMAN */ if(prevNormalizationIndex!=normalizationIndex) { TRACER(itr->first, READ, HEAP, "Peak mass starting new region"); TRACER_BI; TRACER(normalizationIndex, WRITE, STACK, "Region number"); TRACER_BO; prevNormalizationIndex = normalizationIndex; }
             if( IS_VALID_INDEX( normalizationIndex,numberOfRegions ) )
                 basePeakIntensityByRegion[normalizationIndex] = max(basePeakIntensityByRegion[normalizationIndex],
                                                                     itr->second);
-        TRACER_BO; } TRACER(peakPreData, WRITE, HEAP, "peaks intensity square rooted"); TRACER(basePeakIntensityByRegion, WRITE, STACK, "final base peak intensity for each region"); 
+        } TRACER(peakPreData, WRITE, HEAP, "peaks intensity square rooted"); TRACER(basePeakIntensityByRegion, WRITE, STACK, "final base peak intensity for each region"); 
         TRACER_OP_END("section spectrum into regions, find base peaks"); TRACER_OP_START("Normalize peaks 0-50"); TRACER(peakPreData, READ, HEAP, "Peak data to normalize");
         // Normalize peaks in each region from 0 to 50. 
         // Use base peak in each region for normalization. 
@@ -583,7 +583,7 @@ namespace myrimatch
 		    peakItr = peakData.findNear( seqIons[j], g_rtConfig->FragmentMzTolerance ); 
             TRACER(seqIons[j], READ, HEAP, "theoretical m/z to match");
 		    STOP_PROFILER(7);
-
+			TRACER(mzFidelityThresholds, READ, HEAP, "the m/z error thresholds for mzFidelity");
 		    // If a peak was found, increment the sequenceInstance's ion correlation triplet
 		    if( peakItr != peakData.end() && peakItr->second.intenClass > 0 )
 		    {   TRACER(peakItr->first, READ, STACK, "matching peak m/z"); TRACER(peakItr->second.intenClass, READ, HEAP, "matching peak intensity class");

@@ -326,6 +326,23 @@ void tracer_dump(const pwiz::proteome::Digestion::Config *x) {
 	STRUCT_CLOSE;
 }
 
+void tracer_dump(const pwiz::identdata::IdentDataFile::Format *x) {
+	LIT_H(pwiz::identdata::IdentDataFile::Format);
+	switch(*x) {
+	case pwiz::identdata::IdentDataFile::Format_Text :
+		cout << "text";
+		break;
+	case pwiz::identdata::IdentDataFile::Format_pepXML :
+		cout << "pepXML";
+		break;
+	case pwiz::identdata::IdentDataFile::Format_MzIdentML :
+		cout << "mzIdentML";
+		break;
+	default:
+		cout << "<unknown>";
+	}	
+}
+
 void tracer_dump(const freicore::myrimatch::RunTimeConfig *x) {
 	STRUCT_OPEN(freicore::myrimatch::RunTimeConfig);
 	STRUCT_MEMBER(OutputFormat);          
@@ -399,11 +416,7 @@ void tracer_dump(const freicore::myrimatch::RunTimeConfig *x) {
 //    STRUCT_MEMBER(avgPrecursorMassTolerance);
 //    STRUCT_MEMBER(monoPrecursorMassTolerance);
 
-        // Compute the fragment mass error bins and their associated log odds scores
-    STRUCT_MEMBER(massErrors);
-    STRUCT_MEMBER(mzFidelityLods);
-
-    // STRUCT_MEMBER(outputFormat);
+    STRUCT_MEMBER(outputFormat); 
 
 
 	STRUCT_CLOSE;
@@ -596,11 +609,11 @@ void tracer_dump(const pwiz::proteome::ModificationList *x) {
 }
 
 const char * tracer_id(const freicore::BaseSpectrum *x) {
-    return x->nativeID.c_str();
+    return "this*";
 }
 
 const char * tracer_id(const freicore::myrimatch::Spectrum *x) {
-    return x->nativeID.c_str();
+    return "this*";
 }
 
 const char * tracer_id(const void * const ptr) { 
