@@ -12,3 +12,11 @@ pre {
 pre.changed {
     color: #00f !important;
 }
+
+.error-no-write {
+    background-color: #fdd;
+}
+
+table {
+    display: inline;
+}

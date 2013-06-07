@@ -111,8 +111,7 @@ sub op_end {
 
 # Return id of the IO which accessed the object
 sub add_object {
-	my ($id, $name, $heap, $operation, $note, $code, $mem, $type, $value, $parent_io, $parent_relation) = @_;
-
+	my ($id, $name, $heap, $operation, $note, $code, $mem, $type, $value, $parent_io) = @_;
     my $obj;
     if(is_defined_object($mem, $type)) {
         $obj = get_object($mem, $type);
@@ -121,7 +120,8 @@ sub add_object {
         $obj = { 'id' => $object_id, 'allocated_time' => $id, 'type' => $type };
         define_object($mem, $type, $obj, $heap eq '2');
     }
-    $sth_insert_io->execute($id, $obj->{'id'}, $op_stack[-1]->{'id'}, $name, $value, $operation, $note, $code, $parent_io, $parent_relation) || die "Couldn't add io: " . $dbh->errstr;
+
+    $sth_insert_io->execute($id, $obj->{'id'}, $op_stack[-1]->{'id'}, $name, $value, $operation, $note, $code, $parent_io) || die "Couldn't add io: " . $dbh->errstr;
     return $dbh->last_insert_id("","","","");
 }
 
@@ -170,7 +170,7 @@ sub display_serialization {
 # Parse a serialized object into all sub-objects
 # Returns offset in the serialization array with first unparsed element
 sub parse_obj {
-	my ($id, $name, $heap, $operation, $note, $code, $parent_io, $parent_relation, $offset, $serialization_ref) = @_;
+	my ($id, $name, $heap, $operation, $note, $code, $parent_io, $offset, $serialization_ref) = @_;
     my @serialization = @{$serialization_ref};
     if(scalar @serialization == 0) { return -1; }
     if((scalar @serialization)<=$offset) {
@@ -184,25 +184,30 @@ sub parse_obj {
         my $mem = $serialization[$offset++];
         my $type = $serialization[$offset++];
         my $value = $serialization[$offset++];
-        add_object($id, $name, $heap, $operation, $note, $code, $mem, $type, $value, $parent_io, $parent_relation);
+        #          $id, $name, $heap, $operation, $note, $code, $mem, $type, $value, $parent_io
+        add_object($id, $name, $heap, $operation, $note, $code, $mem, $type, $value, $parent_io);
     } elsif($lookup eq '[') { # Array or structure
         my $mem = $serialization[$offset++];
         my $type = $serialization[$offset++];
-        my $arr_io = add_object($id, $name, $heap, $operation, $note, $code, $mem, $type, '', $parent_io, $parent_relation);
+        #                       $id, $name, $heap, $operation, $note, $code, $mem, $type, $value, $parent_io
+        my $arr_io = add_object($id, $name, $heap, $operation, $note, $code, $mem, $type, '',     $parent_io);
         while($serialization[$offset] ne ']') {
             my $member = $serialization[$offset++];
-            $offset = parse_obj($id, $name, $heap, $operation, $note, $code, $arr_io, $member, $offset, $serialization_ref);
+            #                   $id, $name,   $heap, $operation, $note, $code, $parent_io, $offset, $serialization_ref
+            $offset = parse_obj($id, $member, $heap, $operation, $note, $code, $arr_io, $offset, $serialization_ref);
         }
         $offset++; # Eat up the closing bracket
     } elsif($lookup eq '{') {
         my $mem = $serialization[$offset++];
         my $type = $serialization[$offset++];
 
-        my $map_io = add_object($id, $name, $heap, $operation, $note, $code, $mem, $type, '', $parent_io, $parent_relation);
+        #                       $id, $name, $heap, $operation, $note, $code, $mem, $type, $value, $parent_io
+        my $map_io = add_object($id, $name, $heap, $operation, $note, $code, $mem, $type, '',     $parent_io);
         my $i=0;
         while($serialization[$offset] ne '}') {
-            $offset = parse_obj($id, $name, $heap, $operation, $note, $code, $map_io, "$i key", $offset, $serialization_ref);
-            $offset = parse_obj($id, $name, $heap, $operation, $note, $code, $map_io, "$i value", $offset, $serialization_ref);
+            #                   $id, $name,      $heap, $operation, $note, $code, $parent_io, $offset, $serialization_ref
+            $offset = parse_obj($id, "$i key",   $heap, $operation, $note, $code, $map_io,    $offset, $serialization_ref);
+            $offset = parse_obj($id, "$i value", $heap, $operation, $note, $code, $map_io,    $offset, $serialization_ref);
             $i++;
         }
         $offset++; # Eat up the closing brace
@@ -217,8 +222,8 @@ sub tr_dump {
 
 	my $code = add_code($id, $file, $line);
 
-           # ($id, $name, $heap, $operation, $note, $code, $parent_id, $parent_relation, $offset, $serialization_ref)
-	parse_obj($id, $name, $heap, $operation, $note, $code, -1,         '',               0,       \@serialization);
+           # ($id, $name, $heap, $operation, $note, $code, $parent_id,  $offset, $serialization_ref)
+	parse_obj($id, $name, $heap, $operation, $note, $code, -1,          0,       \@serialization);
 }
 
 sub tr_ref {
@@ -256,14 +261,18 @@ sub block_out {
 sub main {
 	# The id of each object is the line number where it first appeared
 	$dbh = DBI->connect( "dbi:SQLite:$db" ) || die "Cannot connect: $DBI::errstr";
+    $dbh->do("PRAGMA journal_mode = OFF");
+	$dbh->do("BEGIN TRANSACTION");
 	$dbh->do( "CREATE TABLE IF NOT EXISTS operation (operation_id INTEGER PRIMARY KEY, name TEXT, parent_id INTEGER, code_start_id INTEGER, code_end_id INTEGER, terminated_time INTEGER)" ) || die "Couldn't create table: ". $dbh->errstr;
+    $dbh->do("CREATE INDEX IF NOT EXISTS operation_name ON operation (name, parent_id)") || die "Couldn't create index: " . $dbh->error;
 	$sth_insert_op = $dbh->prepare("INSERT INTO operation (operation_id, name, parent_id, code_start_id, code_end_id, terminated_time) VALUES (?, ?, ?, ?, ?, ?)") || die "Couldn't prepare statement: " . $dbh->error;
 	$dbh->do( "CREATE TABLE IF NOT EXISTS code (code_id INTEGER PRIMARY KEY, file TEXT, line INTEGER)" ) || die "Couldn't create table: ". $dbh->errstr;
 	$sth_insert_code = $dbh->prepare("INSERT INTO code (code_id, file, line) VALUES (?, ?, ?)") || die "Couldn't prepare statement: " . $dbh->errstr;
 	$dbh->do("CREATE TABLE IF NOT EXISTS object (object_id INTEGER PRIMARY KEY, type TEXT, allocated_time INTEGER, deallocated_time INTEGER)") || die "Couldn't prepare statement: " . $dbh->error;
 	$sth_insert_object = $dbh->prepare("INSERT INTO object (object_id, type, allocated_time, deallocated_time) VALUES (?, ?, ?, ?)") || die "Couldn't prepare statement: " . $dbh->errstr;
-	$dbh->do("CREATE TABLE IF NOT EXISTS io (io_id INTEGER PRIMARY KEY AUTOINCREMENT, io_time INTEGER, object_id INTEGER, operation_id INTEGER, name TEXT, value TEXT, readwrite INTEGER, note TEXT, code_id INTEGER, parent_id INTEGER, parent_relation TEXT)") || die "Couldn't prepare statement: " . $dbh->error;
-	$sth_insert_io = $dbh->prepare("INSERT INTO io (io_time, object_id, operation_id, name, value, readwrite, note, code_id, parent_id, parent_relation) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)") || die "Couldn't prepare statement: " . $dbh->errstr;
+	$dbh->do("CREATE TABLE IF NOT EXISTS io (io_id INTEGER PRIMARY KEY AUTOINCREMENT, io_time INTEGER, object_id INTEGER, operation_id INTEGER, name TEXT, value TEXT, readwrite INTEGER, note TEXT, code_id INTEGER, parent_id INTEGER)") || die "Couldn't prepare statement: " . $dbh->error;
+    $dbh->do("CREATE INDEX IF NOT EXISTS io_parent ON io (parent_id)") || die "Couldn't create index: " . $dbh->error;
+	$sth_insert_io = $dbh->prepare("INSERT INTO io (io_time, object_id, operation_id, name, value, readwrite, note, code_id, parent_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)") || die "Couldn't prepare statement: " . $dbh->errstr;
 
 	my $linenum=0;
 
@@ -305,6 +314,7 @@ sub main {
 		deallocate($linenum, $mem, $type);
 	}
 	op_end($linenum, "all", "", 0);
+	$dbh->do("END TRANSACTION");
 }
 
 
