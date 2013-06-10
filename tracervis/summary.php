@@ -117,9 +117,12 @@ function summary_search_results($spectrum_id, $protein_name) {
 
         $scores = get_operations_by_name("query digested peptides(*)/query digested peptide(*)/query all ptm variants(*)/QuerySequence(*)/test charge(*)/match candidate hypothesis(*)/Spectrum::ScoreSequenceVsSpectrum(*)", $op['id']);
         foreach($scores as $score) {
-            echo "<h4><a href=\"dump.php?id=".$score['id']."\">aaa</a></h4>";
+
             $seq_io = get_io_by_name($score['id'], "seq", "Sequence to match");
-            echo $seq_io[0]['value'];
+
+            echo "<a href=\"dump.php?id=".$score['id']."\">".$seq_io[0]['value']."</a>";
+            #echo $seq_io[0]['value'];
+            #var_dump($score);
             echo "<br/>";
         }
 
