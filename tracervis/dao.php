@@ -150,7 +150,8 @@ function get_object($id)
 {
     global $object_stmt;
     $object_stmt->bindParam('id', $id);
-    $result = $object_stmt->execute()->fetch(PDO::FETCH_ASSOC);
+    $object_stmt->execute();
+    $result = $object_stmt->fetch(PDO::FETCH_ASSOC);
     $object_stmt->closeCursor();
     return $result;
 }
