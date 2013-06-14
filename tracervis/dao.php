@@ -223,7 +223,7 @@ function get_child_ios($id) {
 function get_op_children($id, &$result)
 {
     global $operation_id_stmt;
-    $operation_id_stmt->bind('id', $id);
+    $operation_id_stmt->bindParam('id', $id);
     $operation_id_stmt->execute();
 
     while ($child = $operation_id_stmt->fetch(PDO::FETCH_ASSOC)) {
