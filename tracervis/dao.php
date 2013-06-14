@@ -44,7 +44,10 @@ function get_code($id)
 {
     global $code_ref_stmt;
     $code_ref_stmt->bindParam("id", $id, PDO::PARAM_INT);
-    return $code_ref_stmt->execute()->fetchArray();
+    $code_ref_stmt->execute();
+    $result = $code_ref_stmt->fetch(PDO::FETCH_ASSOC);
+    $code_ref_stmt->closeCursor();
+    return $result;
 }
 
 function annotate($result) {
