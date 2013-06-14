@@ -10,7 +10,7 @@ class ReadWrite {
 function dao_open() {
     global $db, $all_ops_stmt, $operation_stmt, $code_ref_stmt, $io_stmt, $object_stmt, $io_for_object_stmt, $io_for_parent_io_stmt, $operation_by_name_stmt, $io_for_object_parent_name_stmt;
 
-    $db = new SQlite3("test/test.sq3", SQLITE3_OPEN_READONLY);
+    $db = new PDO("sqlite:test.sq3");
     # Get all ops
     $all_ops_stmt = $db->prepare("SELECT operation_id as id, name, parent_id, code_start_id, code_end_id, terminated_time FROM operation ORDER BY operation_id");
     # Get operation for a given id
@@ -41,7 +41,7 @@ function dao_close() {
 function get_code($id)
 {
     global $code_ref_stmt;
-    $code_ref_stmt->bindParam("id", $id, SQLITE3_INTEGER);
+    $code_ref_stmt->bindParam("id", $id, PDO::PARAM_INT);
     return $code_ref_stmt->execute()->fetchArray();
 }
 
@@ -69,8 +69,9 @@ function get_operation($id)
 
 function check_error() {
     global $db;
-    if(sqlite_last_error($db)) {
-        echo sqlite_error_string(sqlite_last_error($db));
+    if($db->errorCode()) {
+        $errorInfo = $db->errorInfo();
+        echo $errorInfo[2];
     }
 }
 
