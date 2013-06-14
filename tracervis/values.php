@@ -178,7 +178,7 @@ function parse_spectrum($data)
 }
 
 # Data format: tab separated triplets 'm/z, intensity[, class]'
-function vis_spectrum($data, $id, $prevData = '', &$allSame)
+function vis_spectrum($data, $id, $prevData = '', &$allSame, $hint = '')
 {
     if ($data === $prevData) {
         return dtto();
@@ -198,6 +198,7 @@ function vis_spectrum($data, $id, $prevData = '', &$allSame)
     $hasPrevData = false;
     $mzs2 = array();
     $ints2 = array();
+    $maxIntensity2 = 0;
     if ($prevData != '') {
         $hasPrevData = true;
         $mzsInts2 = parse_spectrum($prevData);
@@ -205,13 +206,14 @@ function vis_spectrum($data, $id, $prevData = '', &$allSame)
         $ints2 = $mzsInts2[1];
         $minX = min($minX, min($mzs2));
         $maxX = max($maxX, max($mzs2));
+        $maxIntensity2 = max($ints2);
     }
     $width = 824;
     $extra_bottom = false;
-    if ($minClass < $maxClass) {
+    if ($minClass < $maxClass && $hint != "no classes") {
         $extra_bottom = true;
     }
-    $spectrumHeight = 100;
+    $spectrumHeight = ($maxIntensity>0 || $maxIntensity2>0) ? 100 : 22;
     $magnification = $spectrumHeight;
     $height = $spectrumHeight + ($extra_bottom ? 30 : 0);
     $bar_width = 1.0;
@@ -334,7 +336,7 @@ function vis_map($id, &$allSame)
     $result2 = '';
     $result2 .= '<table>';
     foreach ($ios as $cio) {
-        if (endsWith($cio['parent_relation'], 'key')) {
+        if (endsWith($cio['name'], 'key')) {
             $result2 .= '<tr>';
         }
         $result2 .= '<td>';
@@ -343,7 +345,7 @@ function vis_map($id, &$allSame)
         $result2 .= '</td><td>';
         $result2 .= render_value($cio, $object, $childrenSame);
         $result2 .= '</td>';
-        if (endsWith($cio['parent_relation'], 'value')) {
+        if (endsWith($cio['name'], 'value')) {
             $result2 .= '</tr>';
         }
     }
@@ -369,14 +371,14 @@ function vis_structure($io, $prev_value, &$allSame)
     } else {
         $childrenSame = true;
         $result2 = '';
-        $result2 .= '<table>';
+        $result2 .= '<table class="table table-condensed">';
         $dttoMode = false;
         $dttoNames = '';
         foreach ($ios as $cio) {
             $childSame = true;
             $object = get_object($cio['object_id']);
             $result3 = '<tr><td>';
-            $result3 .= get_object_link($object, $cio['parent_relation'], $cio['operation_id']);
+            $result3 .= get_object_link($object, $cio['name'], $cio['operation_id']);
             $result3 .= '</td><td>';
             $result3 .= render_value($cio, $object, $childSame);
             $result3 .= '</td></tr>';
@@ -390,7 +392,7 @@ function vis_structure($io, $prev_value, &$allSame)
                 $result2 .= $result3;
             } else {
                 $dttoMode = true;
-                $dttoNames .= " " . htmlentities($cio['parent_relation']);
+                $dttoNames .= " " . htmlentities($cio['name']);
             }
         }
         $result2 .= '</table>';

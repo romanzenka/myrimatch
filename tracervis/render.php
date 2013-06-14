@@ -1,11 +1,17 @@
 <?php
 
 include_once "values.php";
+include_once "home.php";
 
 # Code for rendering objects into HTML
 
 # An array from objId to previous io for an object.
 $prev_ios = array();
+
+function clear_previous() {
+    global $prev_ios;
+    $prev_ios = array();
+}
 
 #### Code links ####
 
@@ -78,11 +84,15 @@ function endsWith($haystack, $needle)
 }
 
 # Render a value
-function render_value($io, $io_obj, &$allSame) {
+function render_value($io, $io_obj=null, &$allSame=true, $hint='') {
     global $prev_ios;
 
     $id = $io['id'];
     $value = $io['value'];
+
+    if(is_null($io_obj)) {
+        $io_obj = get_object($io['object_id']);
+    }
 
     $type = $io_obj['type'];
     $prev_value = null;
@@ -93,9 +103,9 @@ function render_value($io, $io_obj, &$allSame) {
     if($type == 'std::vector<float>' || $type == 'std::vector<int>' || $type == 'std::vector<double>') {
         $result .= vis_vector($value, $id, $prev_value, $allSame);
     } else if($type == 'freicore::PeakPreData') {
-        $result .= vis_spectrum($value, $id, $prev_value, $allSame);
+        $result .= vis_spectrum($value, $id, $prev_value, $allSame, $hint);
     } else if($type == 'freicore::PeakSpectrum<PeakInfo>') {
-        $result .= vis_spectrum($value, $id, $prev_value, $allSame);
+        $result .= vis_spectrum($value, $id, $prev_value, $allSame, $hint);
     } else if($type == 'FragmentTypes') {
         $fragments = 'abcxyzZ';
         $result .= '<pre>' . substr($fragments, intval($value), 1) . '</pre>';
@@ -122,7 +132,7 @@ function render_value($io, $io_obj, &$allSame) {
 # $r - loaded IO object
 # $reference - link to the object details when 'object', link to the operation details when 'operation'
 # $variable_name - override for the variable name, when '', no override
-function render_io($r, $reference = 'object', $variable_name='') {
+function render_io($r, &$allSame, $reference = 'object', $variable_name='') {
     $result = '';
     # Arrow for read/write/view
     switch ($r['readwrite']) {
@@ -140,7 +150,7 @@ function render_io($r, $reference = 'object', $variable_name='') {
     $object = get_object($r['object_id']);
     $result .= '<td>';
     if($reference == 'object') {
-        $result .=  get_object_link($object, $r['note'], $r['operation_id']);
+        $result .=  get_object_link($object, $r['note'], $r['operation_id'], $r['name']);
         $result .= '</td><td>';
     } else {
         $result .= $r['note'];
@@ -167,9 +177,10 @@ function render_operation($id, $highlight_object_id)
     $breadcrumbs = get_operation_breadcrumbs($parent_id);
 
     echo "$breadcrumbs";
-    echo "<table cellpadding=\"2px\"><tr><td>";
-    echo "<a href=\"dump.php?id=$parent_id\" class=\"btn btn-small\"><i class=\"icon-arrow-up\"></i></a></td>";
-    echo "<td><a href=\"$code_url\" class=\"btn btn-small\"><i class=\"icon-tasks\"></i></a></td>";
+    echo "<table cellpadding=\"2px\"><tr>";
+    echo "<td><a href=\"index.php\" class=\"btn btn-small\"><i class=\"icon-home\"></i></a></td>";
+    echo "<td><a href=\"dump.php?id=$parent_id\" class=\"btn btn-small\"><i class=\"icon-arrow-up\"></i></a></td>";
+    echo "<td></td>";
     echo "<td><h2 style=\"margin-left: 0.3em;\">$sdesc</h2></td></tr></table>";
     echo "<p>$desc</p>";
 
@@ -187,10 +198,11 @@ function render_operation($id, $highlight_object_id)
         }
         echo '<td>'.$r['id'].'</td>';
         if ($r['op_type'] == 'op') {
+            $sub_code_url = get_code_block_link($r['code_start_id'], $r['code_end_id']);
             echo '<td><i class="icon-chevron-right"></i></td> ' .
-                '<td colspan="4">' . get_operation_link($r, -1) . '</td>';
+                '<td colspan="3">' . get_operation_link($r, -1) . '</td><td><a href="'.$sub_code_url.'"><i class="icon-tasks"></i></a></td>';
         } else if ($r['op_type'] == 'io') {
-            echo render_io($r, 'object', '');
+            echo render_io($r, $allSame, 'object', '');
         }
         echo "</tr>";
     }
@@ -202,28 +214,54 @@ function render_object($object_id, $operation_id) {
     $ios = get_io_for_object($object_id);
     $name = get_name_for_object($ios);
 
-    echo '<h2><span style="color: #ddd">' . htmlspecialchars($object['type']) . '</span> ' . htmlspecialchars($name) . '</h2>';
+    echo '<h2>';
+    home_btn();
+    echo ' <span style="color: #ddd">' . htmlspecialchars($object['type']) . '</span> ' . htmlspecialchars($name) . '</h2>';
 
     echo '<table class="table table-condensed">';
     $prev_io = null;
+    $was_write = false;
+    $last_write = false;
+    $allSame = false;
+    $first=true;
     foreach($ios as $io) {
-        if($io['operation_id'] == $operation_id) {
-            echo "<tr class=\"highlight\">";
-        } else {
-            echo "<tr>";
+        if($io['readwrite']==ReadWrite::Read) {
+            if(!$was_write && $first) {
+                echo "<tr class=\"error-no-write\"><td colspan=\"6\">Not clear who wrote this value</td></tr>";
+            }
         }
-        echo '<td>'.$io['id'].'</td>';
-        echo render_io($io, 'operation', $name, $prev_io);
-        echo "</tr>";
+
+        $result = '';
+        if($io['operation_id'] == $operation_id) {
+            $result .= "<tr class=\"highlight\">";
+        } else {
+            $result .= "<tr>";
+        }
+
+        $result .= '<td>'.$io['id'].'</td>';
+        $result .= render_io($io, $allSame, 'operation', $name, $prev_io);
+        $result .= "</tr>";
+
+        if($was_write && $io['readwrite']==ReadWrite::Read && !$allSame) {
+            echo "<tr class=\"error-no-write\"><td colspan=\"6\">Not sure where exactly this value changed</td></tr>";
+        }
+
+        echo $result;
         $prev_io = $io;
+        $last_write = $io['readwrite']==ReadWrite::Write;
+        $was_write |= $last_write;
+        $first = false;
+    }
+    if($last_write) {
+        echo "<tr class=\"error-no-write\"><td colspan=\"6\">Not clear who reads the value after this last write</td></tr>";
     }
     echo '</table>';
 }
 
 #### Objects ####
 
-function get_object_link($object, $name, $operation_id=-1)
+function get_object_link($object, $name, $operation_id=-1, $variable_name='')
 {
     $t = $object['type'];
-    return '<a href="object.php?id=' . $object['id'] . '&operation_id='.$operation_id.'">' . $name . '</a>';
+    return '<a href="object.php?id=' . $object['id'] . '&operation_id='.$operation_id.'" title="'.$variable_name.'">' . $name . '</a>';
 }
