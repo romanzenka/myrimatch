@@ -65,7 +65,9 @@ function get_operation($id)
     global $operation_stmt;
 
     $operation_stmt->bindParam('id', $id);
-    $result = $operation_stmt->execute()->fetchArray();
+    $operation_stmt->execute();
+    $result = $operation_stmt->fetch(PDO::FETCH_ASSOC);
+    $operation_stmt->closeCursor();
     return annotate($result);
 }
 
@@ -232,14 +234,15 @@ function get_op_children($id, &$result)
 
 function get_all_ops() {
     global $all_ops_stmt;
-    $ops = $all_ops_stmt->execute();
+    $all_ops_stmt->execute();
     $result = array();
     $depth = array();
     $depth[-1] = 0;
-    while($op = $ops->fetchArray()) {
+    while($op = $all_ops_stmt->fetch(PDO::FETCH_ASSOC)) {
         $op['depth'] = $depth[$op['parent_id']]+1;
         $depth[$op['id']] = $op['depth'];
         $result[] = $op;
     }
+    $all_ops_stmt->closeCursor();
     return $result;
 }
