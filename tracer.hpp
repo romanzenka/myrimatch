@@ -100,10 +100,6 @@ void tracer_dump(const pwiz::proteome::DigestedPeptide *x);
 
 void tracer_dump(const PeakSpectrumData * x);
 
-const char * tracer_id(const freicore::myrimatch::Spectrum * x);
-const char * tracer_id(const freicore::BaseSpectrum * x);
-const char * tracer_id(const void * const ptr);
-
 #define TRACER(variable, operation, heap, note) { cout << flush << "[TRACER]" << '\t' << "dump" << '\t' << #variable << '\t' << heap << '\t' << operation << '\t' << note << '\t' << __FILE__ << '\t' << __LINE__ << '\t'; tracer_dump(&(variable)); cout << flush << '\n'; }
 #define TRACER_P(variable, type, representation, operation, heap, note) { cout << flush << "[TRACER]" << '\t' << "dump" << '\t' << #variable << '\t' << heap << '\t' << operation << '\t' << note << '\t' << __FILE__ << '\t' << __LINE__ << '\t' << '.' << '\t' << &(variable) << '\t' << type << '\t' << representation << flush << '\n'; }
 // Reference a variable in an operation, do not dump all its info
@@ -115,8 +111,8 @@ const char * tracer_id(const void * const ptr);
 // End operation of a given name
 #define TRACER_OP_END(name) { cout << flush << "[TRACER]" << '\t' <<  "op_end" << '\t' << name << '\t' << __FILE__ << '\t' << __LINE__ << flush << '\n'; }
 
-#define TRACER_METHOD_START(name) { TRACER_BI; TRACER_OP_START(name); TRACER(*this, READ, HEAP, tracer_id(this)); }
-#define TRACER_METHOD_END(name) { TRACER(*this, WRITE, HEAP, tracer_id(this)); TRACER_OP_END(name); TRACER_BO; }
+#define TRACER_METHOD_START(name) { TRACER_BI; TRACER_OP_START(name); TRACER(*this, READ, HEAP, "*this start"); }
+#define TRACER_METHOD_END(name) { TRACER(*this, WRITE, HEAP, "*this end"); TRACER_OP_END(name); TRACER_BO; }
 
 #define TRACER_S2S(variable) lexical_cast<string>(variable)
 // Defines scope of stack variables

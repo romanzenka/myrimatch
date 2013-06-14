@@ -608,17 +608,4 @@ void tracer_dump(const pwiz::proteome::ModificationList *x) {
 	dump_iterable(x, "pwiz::proteome::ModificationList");	
 }
 
-const char * tracer_id(const freicore::BaseSpectrum *x) {
-    return "this*";
-}
-
-const char * tracer_id(const freicore::myrimatch::Spectrum *x) {
-    return "this*";
-}
-
-const char * tracer_id(const void * const ptr) { 
-    return "this*"; 
-}
-
-
 #endif // TRACER
