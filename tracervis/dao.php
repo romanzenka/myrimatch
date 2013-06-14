@@ -8,13 +8,15 @@ class ReadWrite {
 }
 
 function dao_open() {
-    global $db, $all_ops_stmt, $operation_stmt, $code_ref_stmt, $io_stmt, $object_stmt, $io_for_object_stmt, $io_for_parent_io_stmt, $operation_by_name_stmt, $io_for_object_parent_name_stmt;
+    global $db, $all_ops_stmt, $operation_stmt, $operation_id_stmt, $code_ref_stmt, $io_stmt, $object_stmt, $io_for_object_stmt, $io_for_parent_io_stmt, $operation_by_name_stmt, $io_for_object_parent_name_stmt;
 
     $db = new PDO("sqlite:test.sq3");
     # Get all ops
     $all_ops_stmt = $db->prepare("SELECT operation_id as id, name, parent_id, code_start_id, code_end_id, terminated_time FROM operation ORDER BY operation_id");
     # Get operation for a given id
     $operation_stmt = $db->prepare("SELECT operation_id as id, name, parent_id, code_start_id, code_end_id, terminated_time FROM operation WHERE operation_id = :id");
+    # Operation id for parent operation
+    $operation_id_stmt = $db->prepare('SELECT operation_id as id FROM operation WHERE parent_id = :id');
     # get a reference to code by reference id
     $code_ref_stmt = $db->prepare("SELECT code_id as id, file, line FROM code WHERE code_id = :id");
     # Get list of IOs for given operation (only the top-level ones)
@@ -69,7 +71,7 @@ function get_operation($id)
 
 function check_error() {
     global $db;
-    if($db->errorCode()) {
+    if($db->errorCode()!=0) {
         $errorInfo = $db->errorInfo();
         echo $errorInfo[2];
     }
@@ -91,14 +93,12 @@ function get_operations_by_name($path, $parent_id=-1) {
 
     $operation_by_name_stmt->bindParam('parent', $parent_id);
     $operation_by_name_stmt->bindParam('name', $name);
-    $ops = $operation_by_name_stmt->execute();
+    $operation_by_name_stmt->execute();
     $ops_array = array();
-    while($op = $ops->fetchArray()) {
+    while($op = $operation_by_name_stmt->fetch(PDO::FETCH_ASSOC)) {
         $ops_array[] = $op;
     }
-    $ops->finalize();
-    $ops=null;
-    $operation_by_name_stmt->close();
+    $operation_by_name_stmt->closeCursor();
     $result = array();
     $i = 0;
     foreach($ops_array as $op) {
@@ -128,14 +128,12 @@ function get_io_by_name($operation_id, $path, $note='', $parent_io=-1) {
     $io_for_object_parent_name_stmt->bindParam('note', $note);
     $io_for_object_parent_name_stmt->bindParam('parent_io', $parent_io);
     // echo "SELECT * from io where operation_id = $operation_id AND name = \"$name\" and note = \"$note\" and parent_id = $parent_io;";
-    $ops_cmd = $io_for_object_parent_name_stmt->execute();
+    $io_for_object_parent_name_stmt->execute();
     $ops = array();
-    while($op = $ops_cmd->fetchArray()) {
+    while($op = $io_for_object_parent_name_stmt->fetch(PDO::FETCH_ASSOC)) {
         $ops[] = $op;
     }
-    $ops_cmd->finalize();
-    $ops_cmd = null;
-    $io_for_object_parent_name_stmt->close();
+    $io_for_object_parent_name_stmt->closeCursor();
 
     $result = array();
     foreach($ops as $op) {
@@ -148,18 +146,12 @@ function get_io_by_name($operation_id, $path, $note='', $parent_io=-1) {
     return $result;
 }
 
-# Direct children of operation of given id.
-function get_operation_children($id)
-{
-    global $db;
-    return $db->query("SELECT operation_id as id FROM operation WHERE parent_id = $id");
-}
-
 function get_object($id)
 {
     global $object_stmt;
     $object_stmt->bindParam('id', $id);
-    $result = $object_stmt->execute()->fetchArray();
+    $result = $object_stmt->execute()->fetch(PDO::FETCH_ASSOC);
+    $object_stmt->closeCursor();
     return $result;
 }
 
@@ -167,12 +159,13 @@ function get_io_for_object($id)
 {
     global $io_for_object_stmt;
     $io_for_object_stmt->bindParam('id', $id);
-    $ios = $io_for_object_stmt->execute();
+    $io_for_object_stmt->execute();
     $result = array();
-    while ($io = $ios->fetchArray()) {
+    while ($io = $io_for_object_stmt->fetch(PDO::FETCH_ASSOC)) {
         $io['op_type'] = 'io';
         $result[$io['id']] = $io;
     }
+    $io_for_object_stmt->closeCursor();
     return $result;
 }
 
@@ -198,10 +191,11 @@ function get_op_ios($id, &$result)
     global $io_stmt;
     $io_stmt->bindParam('id', $id);
     $ios = $io_stmt->execute();
-    while ($io = $ios->fetchArray()) {
+    while ($io = $io_stmt->fetch(PDO::FETCH_ASSOC)) {
         $io['op_type'] = 'io';
         $result[$io['io_time']] = $io;
     }
+    $io_stmt->closeCursor();
     return $result;
 }
 
@@ -212,21 +206,26 @@ function get_child_ios($id) {
     $io_for_parent_io_stmt->bindParam('id', $id);
     $ios = $io_for_parent_io_stmt->execute();
     $result = array();
-    while ($io = $ios->fetchArray()) {
+    while ($io = $io_for_parent_io_stmt->fetch(PDO::FETCH_ASSOC)) {
         $io['op_type'] = 'io';
         $result[] = $io;
     }
+    $io_for_parent_io_stmt->closeCursor();
     return $result;
 }
 
 function get_op_children($id, &$result)
 {
-    $children = get_operation_children($id);
-    while ($child = $children->fetchArray()) {
+    global $operation_id_stmt;
+    $operation_id_stmt->bind('id', $id);
+    $operation_id_stmt->execute();
+
+    while ($child = $operation_id_stmt->fetch(PDO::FETCH_ASSOC)) {
         $child_operation = get_operation($child['id']);
         $child_operation['op_type'] = 'op';
         $result[$child_operation['id']] = $child_operation;
     }
+    $operation_id_stmt->closeCursor();
     return $result;
 }
 
