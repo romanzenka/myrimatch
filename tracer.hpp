@@ -5,13 +5,9 @@
 #include <map>
 #include <vector>
 #include <boost/interprocess/containers/container/flat_map.hpp>
-
 #include <boost/regex.hpp>
-
-using std::string;
-using std::map;
-using std::vector;
-using std::set;
+// #include "freicore/shared_types.h"
+// #include "myrimatchConfig.h"
 
 #define TRACER_ENABLED 1
 #define HEAP 1
@@ -35,6 +31,7 @@ namespace pwiz {
 		class Digestion;
 		class Modification;
 		class ModificationMap;
+		class ModificationList;
 		class DigestedPeptide;
 	}
 }
@@ -43,13 +40,11 @@ namespace freicore {
     class PeakPreData;
     struct BaseSpectrum;
 	struct PrecursorMassHypothesis;
-	enum MassType;
 	struct FragmentTypesBitset;
     namespace myrimatch {
         struct Spectrum;
         struct PeakInfo;
         struct SpectraList;
-		enum MzToleranceRule;
 		struct SearchResult;
 		struct RunTimeConfig;
     }
@@ -57,30 +52,33 @@ namespace freicore {
 
 typedef boost::container::flat_map<double, freicore::myrimatch::PeakInfo> PeakSpectrumData;
 
+void tracer_dump(freicore::myrimatch::SearchResult *x);
+
 template <typename T>
 void tracer_dump(const boost::shared_ptr<T> *x) {
 	tracer_dump(x->get());
 }
 
+void tracer_dump(const char *x);
+
 template <size_t N>
 void tracer_dump(const char (*x)[N]) {
-	tracer_dump((const char*)(&(*x[0])));
+	tracer_dump(&((*x)[0]));
 }
 
-void tracer_dump(const string *x);
-void tracer_dump(const vector<string> *x);
-void tracer_dump(const map<string, string> *x);
-void tracer_dump(const vector<double> *x);
-void tracer_dump(const vector<float> *x);
-void tracer_dump(const vector<int> *x);
+void tracer_dump(const std::string *x);
+void tracer_dump(const std::vector<std::string> *x);
+void tracer_dump(const std::map<std::string, std::string> *x);
+void tracer_dump(const std::vector<double> *x);
+void tracer_dump(const std::vector<float> *x);
+void tracer_dump(const std::vector<int> *x);
 void tracer_dump(const std::vector<pwiz::chemistry::MZTolerance> *x);
-void tracer_dump(const vector<freicore::PrecursorMassHypothesis> *x);
+void tracer_dump(const std::vector<freicore::PrecursorMassHypothesis> *x);
 
 void tracer_dump(const size_t *x);
 void tracer_dump(const int *x);
 void tracer_dump(const float *x);
 void tracer_dump(const double *x);
-void tracer_dump(const char *x);
 void tracer_dump(const bool *x);
 void tracer_dump(const pwiz::util::IntegerSet *x);
 void tracer_dump(const boost::regex *x);
@@ -90,15 +88,14 @@ void tracer_dump(const freicore::myrimatch::Spectrum *x);
 void tracer_dump(const freicore::BaseSpectrum *x);
 void tracer_dump(const freicore::PrecursorMassHypothesis *x);
 void tracer_dump(const pwiz::chemistry::MZTolerance *x);
-void tracer_dump(const freicore::MassType * x);
-void tracer_dump(const freicore::myrimatch::MzToleranceRule * x);
 void tracer_dump(const freicore::FragmentTypesBitset *x);
 void tracer_dump(const freicore::myrimatch::SearchResult *x);
 void tracer_dump(const freicore::myrimatch::RunTimeConfig *x);
 void tracer_dump(const pwiz::proteome::Peptide *x);
 void tracer_dump(const pwiz::proteome::DigestedPeptide *x);
-
 void tracer_dump(const PeakSpectrumData * x);
+void tracer_dump(const pwiz::proteome::Modification *x);
+void tracer_dump(const pwiz::proteome::ModificationList *x);
 
 #define TRACER(variable, operation, heap, note) { cout << flush << "[TRACER]" << '\t' << "dump" << '\t' << #variable << '\t' << heap << '\t' << operation << '\t' << note << '\t' << __FILE__ << '\t' << __LINE__ << '\t'; tracer_dump(&(variable)); cout << flush << '\n'; }
 #define TRACER_P(variable, type, representation, operation, heap, note) { cout << flush << "[TRACER]" << '\t' << "dump" << '\t' << #variable << '\t' << heap << '\t' << operation << '\t' << note << '\t' << __FILE__ << '\t' << __LINE__ << '\t' << '.' << '\t' << &(variable) << '\t' << type << '\t' << representation << flush << '\n'; }

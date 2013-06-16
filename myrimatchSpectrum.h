@@ -34,7 +34,7 @@
 #include <boost/thread/thread.hpp>
 #include <boost/thread/mutex.hpp>
 #include <bitset>
-
+void tracer_dump(const freicore::MassType * x); void tracer_dump(const freicore::myrimatch::MzToleranceRule * x);
 namespace freicore
 {
 namespace myrimatch

@@ -64,12 +64,22 @@ void tracer_dump(const string *x) {
 	cout << LITERAL << '\t' << x << '\t' << "std::string" << '\t'; esc(x->c_str());
 }
 
+void tracer_dump(const pwiz::cv::CVID *x) {
+	LIT(pwiz::cv::CVID);
+}
+
+void tracer_dump(freicore::myrimatch::SearchResult *x) {
+	tracer_dump(const_cast<const freicore::myrimatch::SearchResult*>(x));
+}
+
+void tracer_dump(const freicore::SearchResultSet<freicore::myrimatch::SearchResult, std::less<freicore::myrimatch::SearchResult> > *x);
+
 // Anything that has const iterator
 template <typename T>
 void dump_iterable(const T *x, const char *typeName) {
 	cout << STRUCT_START << '\t' << x << '\t' << typeName;
 	int i = 0;
-	for(T::const_iterator it = x->cbegin(); it!=x->cend(); it++) {
+	for(typename T::const_iterator it = x->begin(); it!=x->end(); it++) {
 		cout << '\t';
 		cout << i << '\t';
 		tracer_dump(&(*it));
@@ -82,7 +92,7 @@ void dump_iterable(const T *x, const char *typeName) {
 template <typename T>
 void dump_iterable_ptr(const T *x) {
 	int i = 0;
-	for(T::const_iterator it = x->cbegin(); it!=x->cend(); it++) {
+	for(typename T::const_iterator it = x->begin(); it!=x->end(); it++) {
 		cout <<  '\t';
 		cout << i << '\t';
 		tracer_dump(*it);
@@ -92,10 +102,9 @@ void dump_iterable_ptr(const T *x) {
 }
 
 template<typename T, typename S>
-void dump_map(const map<T, S> *x, const char * typeName) {
+void dump_map(const std::map<T, S> *x, const char * typeName) {
 	cout << MAP_START << '\t' << x << '\t' << typeName;
-	typedef map<T, S>::const_iterator iter;
-	for(iter it = x->cbegin(); it != x->cend(); it++) {
+	for(typename std::map<T, S>::const_iterator it = x->begin(); it != x->end(); it++) {
 		cout << '\t';
 		tracer_dump(&(it->first));
 		cout << '\t';
@@ -107,8 +116,7 @@ void dump_map(const map<T, S> *x, const char * typeName) {
 template<typename T, typename S>
 void dump_map(const boost::container::flat_map<T, S> *x, const char * typeName) {
 	cout << MAP_START << '\t' << x << '\t' << typeName;
-	typedef boost::container::flat_map<T, S>::const_iterator iter;
-	for(iter it = x->cbegin(); it != x->cend(); it++) {
+	for(typename boost::container::flat_map<T, S>::const_iterator it = x->begin(); it != x->end(); it++) {
 		cout << "\t";
 		tracer_dump(&(it->first));
 		cout << "\t";
@@ -120,8 +128,7 @@ void dump_map(const boost::container::flat_map<T, S> *x, const char * typeName) 
 template<typename T, typename S>
 void dump_map(const pwiz::util::virtual_map<T, S> *x, const char * typeName) {
 	cout << MAP_START << '\t' << x << '\t' << typeName;
-	typedef pwiz::util::virtual_map<T, S>::const_iterator iter;
-	for(iter it = x->begin(); it != x->end(); it++) {
+	for(typename pwiz::util::virtual_map<T, S>::const_iterator it = x->begin(); it != x->end(); it++) {
 		cout << "\t";
 		tracer_dump(&(it->first));
 		cout << "\t";
@@ -243,10 +250,6 @@ void tracer_dump(const freicore::SpectrumId *x) {
 	STRUCT_MEMBER(nativeID);
 	STRUCT_MEMBER(charge);
 	STRUCT_CLOSE;
-}
-
-void tracer_dump(const pwiz::cv::CVID *x) {
-	LIT(pwiz::cv::CVID);
 }
 
 template <typename T>
@@ -435,6 +438,14 @@ void tracer_dump(const freicore::myrimatch::SearchResult *x) {
 	STRUCT_CLOSE;
 }
 
+void tracer_dump(const pwiz::proteome::Modification *x) {
+	STRUCT_OPEN(pwiz::proteome::Modification);
+	STRUCT_METHOD(hasFormula, bool);
+	STRUCT_METHOD(monoisotopicDeltaMass, double);
+	STRUCT_METHOD(averageDeltaMass, double);
+	STRUCT_CLOSE;
+}
+
 void tracer_dump(const pwiz::proteome::ModificationMap *m) {
 	dump_map(m, "pwiz::proteome::ModificationMap");
 }
@@ -475,7 +486,7 @@ void tracer_dump(const std::vector<T> *x) {
 	dump_iterable(x, "std::vector<T>");
 }
 
-void tracer_dump(const freicore::SearchResultSet<freicore::myrimatch::SearchResult> *x) {
+void tracer_dump(const freicore::SearchResultSet<freicore::myrimatch::SearchResult, std::less<freicore::myrimatch::SearchResult> > *x) {
 	dump_iterable(&(x->_mainSet), "freicore::SearchResultSet<freicore::myrimatch::SearchResult>");
 }
 
@@ -594,14 +605,6 @@ void tracer_dump(const freicore::myrimatch::MzToleranceRule *x) {
 	default:
 		cout << "<unknown>";
 	}
-}
-
-void tracer_dump(const pwiz::proteome::Modification *x) {
-	STRUCT_OPEN(pwiz::proteome::Modification);
-	STRUCT_METHOD(hasFormula, bool);
-	STRUCT_METHOD(monoisotopicDeltaMass, double);
-	STRUCT_METHOD(averageDeltaMass, double);
-	STRUCT_CLOSE;
 }
 
 void tracer_dump(const pwiz::proteome::ModificationList *x) {
