@@ -5,14 +5,6 @@
 <link href="bootstrap/css/bootstrap.min.css" rel="stylesheet" media="screen">
 <link href="css/tracervis.css" rel="stylesheet" media="screen">
 
-<?php
-include_once "dao.php";
-include_once "summary.php";
-
-dao_open();
-
-?>
-
 <body>
 <div style="margin: 1em 0.5em">
 <h2>Myrimatch</h2>
@@ -30,7 +22,4 @@ dao_open();
 </div>
 <script src="bootstrap/js/bootstrap.min.js"></script>
 </body>
-<?php
-dao_close();
-?>
 </html>
